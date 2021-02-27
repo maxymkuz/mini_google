@@ -2,15 +2,14 @@
 
 *Currently it's not parallel or asynchronous, I instead built a basic blocking client.*
 
-*Docker image build does not work yet either, there are some issues with OpenSSL since Alpine is a minimal image with almost no additional packages installed by default*
+Docker image is just 12.3mb thanks to the static compilation and scratch image
 
 Just run it and it will print out structured data found on the page:
-```bash
-cargo run
 
-# Or provide your own webpage as an argument
-# I'd recommend using en.wikipedia.org, it has structured data at the bottom of each page
-cargo run <webpage>
+```bash
+./build.sh
+
+docker run --rm lastgenius/rust-crawler
 ```
 
 Some useful resources on Rust in general, as well as on concurrency and web:

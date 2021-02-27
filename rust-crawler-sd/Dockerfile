@@ -1,8 +1,8 @@
-FROM rust:1.50-alpine as builder
-RUN apk update && apk add --no-cache ca-certificates
-RUN update-ca-certificates
-WORKDIR /usr/src/helloworld
-COPY . .
-RUN cargo install --path .
+FROM scratch
 
-CMD ["target/release/rust"]
+# Scratch image has problems with certificates, this resolves them by copying a standard cert file into the container
+COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+ADD target/x86_64-unknown-linux-musl/release/rust-crawler-sd /
+
+CMD ["/rust-crawler-sd"]
