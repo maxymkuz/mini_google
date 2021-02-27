@@ -1,4 +1,4 @@
-A basic rust docker image.
+A basic rust docker image (3.8mb)
 
 To build an image and run it:
 ```bash
