@@ -22,21 +22,21 @@ struct ScrapeRes {
     webpage: String,
 }
 
-fn get_links_from_html(html: &str, high_level_domain: &str) -> HashSet<String> {
+fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
     // Looks for all elements in the html body that are valid
     // links, saving unique ones in the HashSet
     Document::from(html)
         .find(Name("a").or(Name("link")))
         .filter_map(|n| n.attr("href"))
-        .filter_map(|x| normalize_url(x, high_level_domain))
+        .filter_map(|x| normalize_url(x, base_url, high_level_domain))
         .collect::<HashSet<String>>()
 }
 
-fn normalize_url(url: &str, high_level_domain: &str) -> Option<String> {
+fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
     // If the URL was valid, we check whether it has a host and whether
     // this host is the high level domain we accept
     // If the URL was relative, reqwest also returns an Err variant
-    let base = Url::parse(url).ok();
+    let base = Url::parse(base_url).ok().expect("Invalid page URL");
     let joined = base.join(url).expect("Invalid page URL");
     if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
         Some(joined.to_string())
@@ -45,7 +45,7 @@ fn normalize_url(url: &str, high_level_domain: &str) -> Option<String> {
     }
 }
 
-fn scrape(webpage: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
+fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
     // Creating a blocking Client to send requests with
     // TODO: Maybe use an asynchronous client instead of a blocking one?
     let client = reqwest::blocking::Client::builder()
@@ -54,11 +54,11 @@ fn scrape(webpage: &str, user_agent: &str, high_level_domain: &str) -> Result<Sc
         .unwrap();
 
     // Sending a blocking get request, unwrapping the Result we get
-    println!("{}", webpage);
-    let res = client.get(webpage).send().unwrap().text().unwrap();
+    println!("{}", webpage_url);
+    let res = client.get(webpage_url).send().unwrap().text().unwrap();
 
     // Finding all links on the page
-    let all_links = get_links_from_html(&res, &high_level_domain);
+    let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
 
     // Searching for structured data on the page.
     // We are looking for <script type="application/ld+json"> and we need all of its contents
@@ -68,7 +68,7 @@ fn scrape(webpage: &str, user_agent: &str, high_level_domain: &str) -> Result<Sc
         .map(|x| x.text())
         .nth(0)
         .ok_or_else(|| "The page didn't have structured data")?;
-    let webpage = webpage.to_string();
+    let webpage = webpage_url.to_string();
 
     Ok(ScrapeRes {
         all_links,
@@ -136,7 +136,14 @@ fn main() -> Result<()> {
         let mut new_webpages: Vec<String> = vec![];
 
         // Iterating over all currently picked up URLs
-        for webpage in &webpages {
+        // THIS IS THE WORST WAY EVER DON'T EVEN THINK ABOUT IT
+        // TODO: Implement something okayish
+        let limit = if webpages.len() < 200 {
+            webpages.len()
+        } else {
+            200
+        };
+        for webpage in &webpages[..limit] {
             // This is required for the webpage to last long enough
             // for the thread after the loop
             let webpage = webpage.to_string();
@@ -181,7 +188,8 @@ fn main() -> Result<()> {
             }
         }
 
-        webpages = new_webpages;
+        webpages.extend(new_webpages);
+        println!("{}", visited_webpages.len());
     }
 
     // Opening an output file
