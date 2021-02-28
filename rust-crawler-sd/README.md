@@ -9,6 +9,11 @@ Just run it and it will print out structured data found on the page:
 ```bash
 ./build.sh
 
+# A quick test build of the rust executable
+cargo run -- -i file.txt -o out.txt
+cargo run -- --help
+
+# This build is relatively slow and produces a static executable
 docker run --rm lastgenius/rust-crawler
 ```
 
