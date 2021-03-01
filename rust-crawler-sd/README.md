@@ -1,6 +1,4 @@
-**A little crawler for structured data in Rust**
-
-*Currently it's not parallel or asynchronous, I instead built a basic blocking client.*
+**A little parallel crawler for structured data in Rust**
 
 Docker image is just 12.3mb thanks to the static compilation and scratch image
 
@@ -10,7 +8,7 @@ Just run it and it will print out structured data found on the page:
 ./build.sh
 
 # A quick test build of the rust executable
-cargo run -- -i file.txt -o out.txt
+cargo run -- -i file.txt -o out.txt -t 8
 cargo run -- --help
 
 # This build is relatively slow and produces a static executable

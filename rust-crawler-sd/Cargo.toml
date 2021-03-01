@@ -12,3 +12,4 @@ tokio = { version = "1", features = ["full"] }
 select =  "0.5" 
 clap = "2.33.3"
 error-chain = "0.12.4"
+indicatif = "0.15.0"
