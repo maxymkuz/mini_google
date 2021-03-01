@@ -171,7 +171,7 @@ fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Resul
         .filter(|n| n.attr("type") == Some("application/ld+json"))
         .map(|x| x.text())
         .nth(0)
-        .ok_or_else(|| "The page didn't have structured data")?;
+        .unwrap_or("The page didn't have structured data".to_string());
     let webpage = webpage_url.to_string();
 
     Ok(ScrapeRes {
@@ -200,12 +200,20 @@ fn main() -> Result<()> {
                 .long("out_file")
                 .takes_value(true)
                 .help("Output file for collected structured data"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("threads_num")
                 .short("t")
                 .long("threads")
                 .takes_value(true)
                 .help("Number of threads (workers) in the thread pool"),
+        )
+        .arg(
+            Arg::with_name("page_limit")
+                .short("l")
+                .long("limit")
+                .takes_value(true)
+                .help("Number of pages to crawl until stopping"),
         ).get_matches();
 
     let input_file = matches
@@ -221,6 +229,12 @@ fn main() -> Result<()> {
         .expect("Provide a valid number of threads!")
         .parse()
         .expect("Provide a valid number of threads!");
+
+    let webpage_limit: usize = matches
+        .value_of("page_limit")
+        .expect("Provide a valid number of threads!")
+        .parse()
+        .unwrap_or(1024);
 
     let user_agent: String = "rust-crawler-mini-google-ucu".to_string();
 
@@ -250,7 +264,6 @@ fn main() -> Result<()> {
 
     // A nice TUI debug interface
     // TODO: Add a nice way to see what each thread is doing right now
-    let webpage_limit: usize = 1024;
     let pb = ProgressBar::new(webpage_limit as u64);
     pb.set_style(
         ProgressStyle::default_bar()
