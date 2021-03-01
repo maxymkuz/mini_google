@@ -1,5 +1,6 @@
 use clap::{App, Arg};
 use error_chain::error_chain;
+use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
 use select::document::Document;
@@ -22,9 +23,10 @@ error_chain! {
       }
 }
 
+#[allow(dead_code)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    url_sender: mpsc::Sender<String>,
+    url_sender: mpsc::Sender<Vec<String>>,
     new_url_receiver: mpsc::Receiver<HashSet<String>>,
     sd_receiver: mpsc::Receiver<(String, String)>,
 }
@@ -36,24 +38,21 @@ impl ThreadPool {
         let (url_sender, url_receiver) = mpsc::channel();
         let (new_url_sender, new_url_receiver) = mpsc::channel();
         let (sd_sender, sd_receiver) = mpsc::channel();
-
         let url_receiver = Arc::new(Mutex::new(url_receiver));
+
+        let page_data = PageData {
+            url_receiver,
+            new_url_sender,
+            sd_sender,
+            user_agent,
+            high_level_domain,
+        };
 
         let mut workers = Vec::new();
 
         for id in 0..size {
-            let new_url_sender = new_url_sender.clone();
-            let sd_sender = sd_sender.clone();
-            let user_agent = user_agent.clone();
-            let high_level_domain = high_level_domain.clone();
-            workers.push(Worker::new(
-                id,
-                Arc::clone(&url_receiver),
-                new_url_sender,
-                sd_sender,
-                user_agent,
-                high_level_domain,
-            ));
+            let page_data = page_data.clone();
+            workers.push(Worker::new(id, page_data));
         }
 
         ThreadPool {
@@ -63,83 +62,86 @@ impl ThreadPool {
             sd_receiver,
         }
     }
-
-    pub fn send_url_job(&self, url: &str) {
-        self.url_sender.send(url.to_string()).unwrap();
-    }
 }
 
+#[derive(Clone)]
+struct PageData {
+    url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
+    new_url_sender: mpsc::Sender<HashSet<String>>,
+    sd_sender: mpsc::Sender<(String, String)>,
+    user_agent: String,
+    high_level_domain: String,
+}
+
+#[allow(dead_code)]
 struct Worker {
     id: usize,
     thread: thread::JoinHandle<()>,
 }
 
 impl Worker {
-    fn new(
-        id: usize,
-        url_receiver: Arc<Mutex<mpsc::Receiver<String>>>,
-        new_url_sender: mpsc::Sender<HashSet<String>>,
-        sd_sender: mpsc::Sender<(String, String)>,
-        user_agent: String,
-        high_level_domain: String,
-    ) -> Worker {
-        let thread = thread::spawn(move || loop {
-            let webpage_url = url_receiver.lock().unwrap().recv();
+    fn new(id: usize, page_data: PageData) -> Worker {
+        let thread = thread::spawn(move || {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    loop {
+                        let webpage_urls = page_data.url_receiver.lock().unwrap().recv();
 
-            // If the other end has disconnected, we should also quit the loop
-            let webpage_url = match webpage_url {
-                Ok(webpage_url) => webpage_url,
-                Err(RecvError) => {
-                    break;
-                }
-            };
-            //println!("Worker {} got a URL {}", id, webpage_url);
+                        // If the other end has disconnected, we should also quit the loop
+                        let webpage_urls = match webpage_urls {
+                            Ok(webpage_url) => webpage_url,
+                            Err(RecvError) => {
+                                break;
+                            }
+                        };
+                        //println!("Worker {} got URLs {:?}", id, webpage_urls);
+                        let webpage_urls = stream::iter(webpage_urls);
 
-            match scrape(&webpage_url, &user_agent, &high_level_domain) {
-                Ok(scrape_res) => {
-                    // Send newly collected links
-                    new_url_sender.send(scrape_res.all_links).unwrap();
+                        // TODO: Kill myself
+                        webpage_urls
+                            .for_each_concurrent(None, |webpage_url| {
+                                let page_data = page_data.clone();
+                                let webpage_url = webpage_url.clone();
+                                async move {
+                                    //println!("Worker {} got URL {}", id, webpage_url);
+                                    match scrape(
+                                        &webpage_url,
+                                        &page_data.user_agent,
+                                        &page_data.high_level_domain,
+                                    )
+                                    .await
+                                    {
+                                        Ok(scrape_res) => {
+                                            // Send newly collected links
+                                            page_data
+                                                .new_url_sender
+                                                .send(scrape_res.all_links)
+                                                .expect("Other end of the channel closed");
 
-                    // Send collected structured data
-                    // TODO: Add the whole scrapped text and possibly headers as a separate entity
-                    sd_sender
-                        .send((scrape_res.webpage, scrape_res.structured_data))
-                        .unwrap();
-                }
-                Err(_) => (),
-            };
+                                            // Send collected structured data
+                                            // TODO: Add the whole scrapped text and possibly headers as a separate entity
+                                            page_data
+                                                .sd_sender
+                                                .send((
+                                                    scrape_res.webpage,
+                                                    scrape_res.structured_data,
+                                                ))
+                                                .expect("Other end of the channel closed");
+                                        }
+                                        Err(_) => (),
+                                    };
+                                    //println!("Worker {} finished URL {}", id, webpage_url);
+                                }
+                            })
+                            .await;
+                    }
+                })
         });
 
         Worker { id, thread }
-    }
-}
-
-fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
-    // Looks for all elements in the html body that are valid
-    // links, saving unique ones in the HashSet
-    Document::from(html)
-        .find(Name("a").or(Name("link")))
-        .filter_map(|n| n.attr("href"))
-        .filter_map(|x| normalize_url(x, base_url, high_level_domain))
-        .collect::<HashSet<String>>()
-}
-
-fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
-    // If the URL was valid, we check whether it has a host and whether
-    // this host is the high level domain we accept
-    let base = match Url::parse(base_url) {
-        Ok(base) => base,
-        Err(_) => return None,
-    };
-    let joined = match base.join(url) {
-        Ok(joined) => joined,
-        Err(_) => return None,
-    };
-
-    if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
-        Some(joined.to_string())
-    } else {
-        None
     }
 }
 
@@ -149,17 +151,17 @@ struct ScrapeRes {
     webpage: String,
 }
 
-fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
+async fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
     // Creating a blocking Client to send requests with
     // TODO: Maybe use an asynchronous client instead of a blocking one?
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .user_agent(user_agent)
         .build()
         .unwrap();
 
     // Sending a blocking get request, unwrapping the Result we get
     // TODO: See if there is a point in making each thread asynchronous on its own?
-    let res = client.get(webpage_url).send().unwrap().text().unwrap();
+    let res = client.get(webpage_url).send().await?.text().await?;
 
     // Finding all links on the page
     let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
@@ -179,6 +181,38 @@ fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Resul
         structured_data,
         webpage,
     })
+}
+
+fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
+    // Looks for all elements in the html body that are valid
+    // links, saving unique ones in the HashSet
+    Document::from(html)
+        .find(Name("a").or(Name("link")))
+        .filter_map(|n| n.attr("href"))
+        .filter_map(|x| normalize_url(x, base_url, high_level_domain))
+        .collect::<HashSet<String>>()
+}
+
+fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
+    // If the URL was valid, we check whether it has a host and whether
+    // this host is the high level domain we accept
+    let base = match Url::parse(base_url) {
+        Ok(base) => base,
+        Err(_) => return None,
+    };
+    let mut joined = match base.join(url) {
+        Ok(joined) => joined,
+        Err(_) => return None,
+    };
+
+    // Delete the '#' fragment from the url string
+    joined.set_fragment(None);
+
+    if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
+        Some(joined.to_string())
+    } else {
+        None
+    }
 }
 
 fn main() -> Result<()> {
@@ -241,6 +275,7 @@ fn main() -> Result<()> {
     // Create vectors to save webpages we have to crawl and structured data on them
     let mut webpages: Vec<String> = vec![];
     let mut visited_webpages: HashSet<String> = HashSet::new();
+    let mut total_pages_sent: usize = 0;
     let mut structured_data: HashMap<String, String> = HashMap::new();
 
     // Reading the input file with URLs
@@ -259,6 +294,8 @@ fn main() -> Result<()> {
         .unwrap()
         .to_string();
 
+    // TODO: I am going to try to reimplement our thread pool architecture using reqwest's tokio
+    // async runtime
     // Creating a thread pool with scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
 
@@ -274,15 +311,24 @@ fn main() -> Result<()> {
 
     // Crawling through all webpages
     while visited_webpages.len() < webpage_limit {
-        match webpages.pop() {
-            Some(webpage) => {
-                if !visited_webpages.contains(&webpage) {
-                    pool.url_sender.send(webpage).unwrap();
+        // Send new urls to the scrapper
+        let mut sent_webpages: Vec<String> = vec![];
+        if webpages.len() > 20 && total_pages_sent < webpage_limit * 2 {
+            while sent_webpages.len() < 20 {
+                match webpages.pop() {
+                    Some(webpage) => {
+                        if !visited_webpages.contains(&webpage) {
+                            sent_webpages.push(webpage);
+                        }
+                    }
+                    None => (),
                 }
             }
-            None => (),
+            total_pages_sent += sent_webpages.len();
+            pool.url_sender.send(sent_webpages).unwrap();
         }
 
+        // Try to receive structured data from our end of the channel
         match pool.sd_receiver.try_recv() {
             Ok((url, sd)) => {
                 structured_data.insert(url.clone(), sd);
@@ -292,6 +338,7 @@ fn main() -> Result<()> {
             Err(_) => (),
         };
 
+        // Try to receive newly collected links from our end of the channel
         match pool.new_url_receiver.try_recv() {
             Ok(new_urls) => {
                 //println!("Received {} new URLs", new_urls.len());
