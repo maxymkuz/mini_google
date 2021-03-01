@@ -1,16 +1,22 @@
-**A little crawler for structured data in Rust**
+**Parallel crawler for structured data in Rust**
 
-*Currently it's not parallel or asynchronous, I instead built a basic blocking client.*
-
-*Docker image build does not work yet either, there are some issues with OpenSSL since Alpine is a minimal image with almost no additional packages installed by default*
+Docker image is just 14mb thanks to the static compilation and scratch image
 
 Just run it and it will print out structured data found on the page:
-```bash
-cargo run
 
-# Or provide your own webpage as an argument
-# I'd recommend using en.wikipedia.org, it has structured data at the bottom of each page
-cargo run <webpage>
+```bash
+# A quick test build of the rust executable
+# The CLI executable displays its progress
+cargo run -- -i file.txt -o out.txt -t 8
+
+# A help page with CLI parameters' descriptions
+cargo run -- --help
+
+# Build and run a Docker image
+# This build is relatively slow and produces a static executable
+# The progress is not displayed correctly in the docker container
+./build.sh
+docker run --rm lastgenius/rust-crawler -i file.txt -o out.txt -t 8
 ```
 
 Some useful resources on Rust in general, as well as on concurrency and web:
