@@ -1,18 +1,22 @@
-**A little parallel crawler for structured data in Rust**
+**Parallel crawler for structured data in Rust**
 
-Docker image is just 12.3mb thanks to the static compilation and scratch image
+Docker image is just 14mb thanks to the static compilation and scratch image
 
 Just run it and it will print out structured data found on the page:
 
 ```bash
-./build.sh
-
 # A quick test build of the rust executable
+# The CLI executable displays its progress
 cargo run -- -i file.txt -o out.txt -t 8
+
+# A help page with CLI parameters' descriptions
 cargo run -- --help
 
+# Build and run a Docker image
 # This build is relatively slow and produces a static executable
-docker run --rm lastgenius/rust-crawler
+# The progress is not displayed correctly in the docker container
+./build.sh
+docker run --rm lastgenius/rust-crawler -i file.txt -o out.txt -t 8
 ```
 
 Some useful resources on Rust in general, as well as on concurrency and web:

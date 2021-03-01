@@ -1,12 +1,13 @@
 use clap::{App, Arg};
 use error_chain::error_chain;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
 use select::document::Document;
 use select::predicate::{Name, Predicate};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use std::sync::mpsc::RecvError;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
@@ -83,12 +84,15 @@ impl Worker {
         high_level_domain: String,
     ) -> Worker {
         let thread = thread::spawn(move || loop {
-            let webpage_url = url_receiver
-                .lock()
-                .unwrap()
-                .recv()
-                .expect(&format!("Thread #{} didn't receive a valid url", id));
+            let webpage_url = url_receiver.lock().unwrap().recv();
 
+            // If the other end has disconnected, we should also quit the loop
+            let webpage_url = match webpage_url {
+                Ok(webpage_url) => webpage_url,
+                Err(RecvError) => {
+                    break;
+                }
+            };
             //println!("Worker {} got a URL {}", id, webpage_url);
 
             match scrape(&webpage_url, &user_agent, &high_level_domain) {
@@ -123,9 +127,15 @@ fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> H
 fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
     // If the URL was valid, we check whether it has a host and whether
     // this host is the high level domain we accept
-    // If the URL was relative, reqwest also returns an Err variant
-    let base = Url::parse(base_url).ok().expect("Invalid page URL");
-    let joined = base.join(url).expect("Invalid page URL");
+    let base = match Url::parse(base_url) {
+        Ok(base) => base,
+        Err(_) => return None,
+    };
+    let joined = match base.join(url) {
+        Ok(joined) => joined,
+        Err(_) => return None,
+    };
+
     if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
         Some(joined.to_string())
     } else {
@@ -242,6 +252,12 @@ fn main() -> Result<()> {
     // TODO: Add a nice way to see what each thread is doing right now
     let webpage_limit: usize = 1024;
     let pb = ProgressBar::new(webpage_limit as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed}] {bar:40.cyan/blue} {pos:>5}/{len:5} {msg}")
+            .progress_chars("##-"),
+    );
+    pb.set_message("Collecting data from webpages...");
 
     // Crawling through all webpages
     while visited_webpages.len() < webpage_limit {
@@ -258,6 +274,7 @@ fn main() -> Result<()> {
             Ok((url, sd)) => {
                 structured_data.insert(url.clone(), sd);
                 visited_webpages.insert(url);
+                pb.set_position(visited_webpages.len() as u64);
             }
             Err(_) => (),
         };
@@ -265,16 +282,13 @@ fn main() -> Result<()> {
         match pool.new_url_receiver.try_recv() {
             Ok(new_urls) => {
                 //println!("Received {} new URLs", new_urls.len());
-                pb.inc(1);
                 webpages.extend(new_urls);
             }
             Err(_) => (),
         };
     }
 
-    for worker in pool.workers {
-        worker.thread.join().unwrap();
-    }
+    pb.finish_with_message("Finished collecting data");
 
     println!("We have visited {} webpages", visited_webpages.len());
 
