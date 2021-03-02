@@ -1,220 +1,24 @@
+#![warn(missing_docs)]
+//! This crate is an implementation of multi-threaded asynchronous Rust crawler.
+//!
+//! It is one of two versions of such a crawler (the other being
+//! developed in Python at https://github.com/maxymkuz/mini_google )
 use clap::{App, Arg};
-use error_chain::error_chain;
-use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
-use select::document::Document;
-use select::predicate::{Name, Predicate};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::sync::mpsc::RecvError;
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread;
 
-// TODO: Add documentation and comments where needed
+mod scrape;
+mod thread_pool;
+use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool};
+
 // TODO: Write a couple of tests
-// TODO: Divide this file into several modules
 
-error_chain! {
-      foreign_links {
-          ReqError(reqwest::Error);
-          IoError(std::io::Error);
-      }
-}
-
-#[allow(dead_code)]
-pub struct ThreadPool {
-    workers: Vec<Worker>,
-    url_sender: mpsc::Sender<Vec<String>>,
-    new_url_receiver: mpsc::Receiver<HashSet<String>>,
-    sd_receiver: mpsc::Receiver<(String, String)>,
-}
-
-impl ThreadPool {
-    pub fn new(size: usize, user_agent: String, high_level_domain: String) -> ThreadPool {
-        assert!(size > 0);
-
-        let (url_sender, url_receiver) = mpsc::channel();
-        let (new_url_sender, new_url_receiver) = mpsc::channel();
-        let (sd_sender, sd_receiver) = mpsc::channel();
-        let url_receiver = Arc::new(Mutex::new(url_receiver));
-
-        let page_data = PageData {
-            url_receiver,
-            new_url_sender,
-            sd_sender,
-            user_agent,
-            high_level_domain,
-        };
-
-        let mut workers = Vec::new();
-
-        for id in 0..size {
-            let page_data = page_data.clone();
-            workers.push(Worker::new(id, page_data));
-        }
-
-        ThreadPool {
-            workers,
-            url_sender,
-            new_url_receiver,
-            sd_receiver,
-        }
-    }
-}
-
-#[derive(Clone)]
-struct PageData {
-    url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
-    new_url_sender: mpsc::Sender<HashSet<String>>,
-    sd_sender: mpsc::Sender<(String, String)>,
-    user_agent: String,
-    high_level_domain: String,
-}
-
-#[allow(dead_code)]
-struct Worker {
-    id: usize,
-    thread: thread::JoinHandle<()>,
-}
-
-impl Worker {
-    fn new(id: usize, page_data: PageData) -> Worker {
-        let thread = thread::spawn(move || {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(async {
-                    loop {
-                        let webpage_urls = page_data.url_receiver.lock().unwrap().recv();
-
-                        // If the other end has disconnected, we should also quit the loop
-                        let webpage_urls = match webpage_urls {
-                            Ok(webpage_url) => webpage_url,
-                            Err(RecvError) => {
-                                break;
-                            }
-                        };
-                        //println!("Worker {} got URLs {:?}", id, webpage_urls);
-                        let webpage_urls = stream::iter(webpage_urls);
-
-                        // TODO: Kill myself
-                        webpage_urls
-                            .for_each_concurrent(None, |webpage_url| {
-                                let page_data = page_data.clone();
-                                let webpage_url = webpage_url.clone();
-                                async move {
-                                    //println!("Worker {} got URL {}", id, webpage_url);
-                                    match scrape(
-                                        &webpage_url,
-                                        &page_data.user_agent,
-                                        &page_data.high_level_domain,
-                                    )
-                                    .await
-                                    {
-                                        Ok(scrape_res) => {
-                                            // Send newly collected links
-                                            page_data
-                                                .new_url_sender
-                                                .send(scrape_res.all_links)
-                                                .expect("Other end of the channel closed");
-
-                                            // Send collected structured data
-                                            // TODO: Add the whole scrapped text and possibly headers as a separate entity
-                                            page_data
-                                                .sd_sender
-                                                .send((
-                                                    scrape_res.webpage,
-                                                    scrape_res.structured_data,
-                                                ))
-                                                .expect("Other end of the channel closed");
-                                        }
-                                        Err(_) => (),
-                                    };
-                                    //println!("Worker {} finished URL {}", id, webpage_url);
-                                }
-                            })
-                            .await;
-                    }
-                })
-        });
-
-        Worker { id, thread }
-    }
-}
-
-struct ScrapeRes {
-    all_links: HashSet<String>,
-    structured_data: String,
-    webpage: String,
-}
-
-async fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
-    // Creating a blocking Client to send requests with
-    // TODO: Maybe use an asynchronous client instead of a blocking one?
-    let client = reqwest::Client::builder()
-        .user_agent(user_agent)
-        .build()
-        .unwrap();
-
-    // Sending a blocking get request, unwrapping the Result we get
-    // TODO: See if there is a point in making each thread asynchronous on its own?
-    let res = client.get(webpage_url).send().await?.text().await?;
-
-    // Finding all links on the page
-    let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
-
-    // Searching for structured data on the page.
-    // We are looking for <script type="application/ld+json"> and we need all of its contents
-    let structured_data: String = Document::from(res.as_str())
-        .find(Name("script"))
-        .filter(|n| n.attr("type") == Some("application/ld+json"))
-        .map(|x| x.text())
-        .nth(0)
-        .unwrap_or("The page didn't have structured data".to_string());
-    let webpage = webpage_url.to_string();
-
-    Ok(ScrapeRes {
-        all_links,
-        structured_data,
-        webpage,
-    })
-}
-
-fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
-    // Looks for all elements in the html body that are valid
-    // links, saving unique ones in the HashSet
-    Document::from(html)
-        .find(Name("a").or(Name("link")))
-        .filter_map(|n| n.attr("href"))
-        .filter_map(|x| normalize_url(x, base_url, high_level_domain))
-        .collect::<HashSet<String>>()
-}
-
-fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
-    // If the URL was valid, we check whether it has a host and whether
-    // this host is the high level domain we accept
-    let base = match Url::parse(base_url) {
-        Ok(base) => base,
-        Err(_) => return None,
-    };
-    let mut joined = match base.join(url) {
-        Ok(joined) => joined,
-        Err(_) => return None,
-    };
-
-    // Delete the '#' fragment from the url string
-    joined.set_fragment(None);
-
-    if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
-        Some(joined.to_string())
-    } else {
-        None
-    }
-}
-
+/// The main thread function that parses command line arguments, reads webpage links from
+/// the input file and launches the thread pool, waits for it to finish and writes collected
+/// data back on disk.
 fn main() -> Result<()> {
     // Matching our command-line arguments
     // Clap also creates a nice help page for our program
@@ -294,9 +98,7 @@ fn main() -> Result<()> {
         .unwrap()
         .to_string();
 
-    // TODO: I am going to try to reimplement our thread pool architecture using reqwest's tokio
-    // async runtime
-    // Creating a thread pool with scrapper workers to send URLs to
+    // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
 
     // A nice TUI debug interface
@@ -313,6 +115,8 @@ fn main() -> Result<()> {
     while visited_webpages.len() < webpage_limit {
         // Send new urls to the scrapper
         let mut sent_webpages: Vec<String> = vec![];
+
+        // TODO: Think of something more flexible and nice
         if webpages.len() > 20 && total_pages_sent < webpage_limit * 2 {
             while sent_webpages.len() < 20 {
                 match webpages.pop() {
