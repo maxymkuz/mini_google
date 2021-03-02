@@ -6,11 +6,15 @@ Basic UI (to be) implemented using Rust.
 
 * Zola 
 
-### Usage:
+### Usage (without Docker):
 ```bash
 cd zola-webpage
 zola build
 zola serve
+```
+### Usage (with Docker):
+```bash
+./build.sh
 ```
 ## Probable query format:
 (Still needs more discussion.)
