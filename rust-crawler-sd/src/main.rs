@@ -70,9 +70,9 @@ fn main() -> Result<()> {
 
     let webpage_limit: usize = matches
         .value_of("page_limit")
-        .expect("Provide a valid number of threads!")
+        .unwrap_or("1024")
         .parse()
-        .unwrap_or(1024);
+        .expect("Provide a valid webpage limit!");
 
     let user_agent: String = "rust-crawler-mini-google-ucu".to_string();
 
