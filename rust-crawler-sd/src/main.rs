@@ -1,186 +1,24 @@
+#![warn(missing_docs)]
+//! This crate is an implementation of multi-threaded asynchronous Rust crawler.
+//!
+//! It is one of two versions of such a crawler (the other being
+//! developed in Python at https://github.com/maxymkuz/mini_google )
 use clap::{App, Arg};
-use error_chain::error_chain;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
-use select::document::Document;
-use select::predicate::{Name, Predicate};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::sync::mpsc::RecvError;
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread;
 
-// TODO: Add documentation and comments where needed
+mod scrape;
+mod thread_pool;
+use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool};
+
 // TODO: Write a couple of tests
-// TODO: Divide this file into several modules
 
-error_chain! {
-      foreign_links {
-          ReqError(reqwest::Error);
-          IoError(std::io::Error);
-      }
-}
-
-pub struct ThreadPool {
-    workers: Vec<Worker>,
-    url_sender: mpsc::Sender<String>,
-    new_url_receiver: mpsc::Receiver<HashSet<String>>,
-    sd_receiver: mpsc::Receiver<(String, String)>,
-}
-
-impl ThreadPool {
-    pub fn new(size: usize, user_agent: String, high_level_domain: String) -> ThreadPool {
-        assert!(size > 0);
-
-        let (url_sender, url_receiver) = mpsc::channel();
-        let (new_url_sender, new_url_receiver) = mpsc::channel();
-        let (sd_sender, sd_receiver) = mpsc::channel();
-
-        let url_receiver = Arc::new(Mutex::new(url_receiver));
-
-        let mut workers = Vec::new();
-
-        for id in 0..size {
-            let new_url_sender = new_url_sender.clone();
-            let sd_sender = sd_sender.clone();
-            let user_agent = user_agent.clone();
-            let high_level_domain = high_level_domain.clone();
-            workers.push(Worker::new(
-                id,
-                Arc::clone(&url_receiver),
-                new_url_sender,
-                sd_sender,
-                user_agent,
-                high_level_domain,
-            ));
-        }
-
-        ThreadPool {
-            workers,
-            url_sender,
-            new_url_receiver,
-            sd_receiver,
-        }
-    }
-
-    pub fn send_url_job(&self, url: &str) {
-        self.url_sender.send(url.to_string()).unwrap();
-    }
-}
-
-struct Worker {
-    id: usize,
-    thread: thread::JoinHandle<()>,
-}
-
-impl Worker {
-    fn new(
-        id: usize,
-        url_receiver: Arc<Mutex<mpsc::Receiver<String>>>,
-        new_url_sender: mpsc::Sender<HashSet<String>>,
-        sd_sender: mpsc::Sender<(String, String)>,
-        user_agent: String,
-        high_level_domain: String,
-    ) -> Worker {
-        let thread = thread::spawn(move || loop {
-            let webpage_url = url_receiver.lock().unwrap().recv();
-
-            // If the other end has disconnected, we should also quit the loop
-            let webpage_url = match webpage_url {
-                Ok(webpage_url) => webpage_url,
-                Err(RecvError) => {
-                    break;
-                }
-            };
-            //println!("Worker {} got a URL {}", id, webpage_url);
-
-            match scrape(&webpage_url, &user_agent, &high_level_domain) {
-                Ok(scrape_res) => {
-                    // Send newly collected links
-                    new_url_sender.send(scrape_res.all_links).unwrap();
-
-                    // Send collected structured data
-                    // TODO: Add the whole scrapped text and possibly headers as a separate entity
-                    sd_sender
-                        .send((scrape_res.webpage, scrape_res.structured_data))
-                        .unwrap();
-                }
-                Err(_) => (),
-            };
-        });
-
-        Worker { id, thread }
-    }
-}
-
-fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
-    // Looks for all elements in the html body that are valid
-    // links, saving unique ones in the HashSet
-    Document::from(html)
-        .find(Name("a").or(Name("link")))
-        .filter_map(|n| n.attr("href"))
-        .filter_map(|x| normalize_url(x, base_url, high_level_domain))
-        .collect::<HashSet<String>>()
-}
-
-fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<String> {
-    // If the URL was valid, we check whether it has a host and whether
-    // this host is the high level domain we accept
-    let base = match Url::parse(base_url) {
-        Ok(base) => base,
-        Err(_) => return None,
-    };
-    let joined = match base.join(url) {
-        Ok(joined) => joined,
-        Err(_) => return None,
-    };
-
-    if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
-        Some(joined.to_string())
-    } else {
-        None
-    }
-}
-
-struct ScrapeRes {
-    all_links: HashSet<String>,
-    structured_data: String,
-    webpage: String,
-}
-
-fn scrape(webpage_url: &str, user_agent: &str, high_level_domain: &str) -> Result<ScrapeRes> {
-    // Creating a blocking Client to send requests with
-    // TODO: Maybe use an asynchronous client instead of a blocking one?
-    let client = reqwest::blocking::Client::builder()
-        .user_agent(user_agent)
-        .build()
-        .unwrap();
-
-    // Sending a blocking get request, unwrapping the Result we get
-    // TODO: See if there is a point in making each thread asynchronous on its own?
-    let res = client.get(webpage_url).send().unwrap().text().unwrap();
-
-    // Finding all links on the page
-    let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
-
-    // Searching for structured data on the page.
-    // We are looking for <script type="application/ld+json"> and we need all of its contents
-    let structured_data: String = Document::from(res.as_str())
-        .find(Name("script"))
-        .filter(|n| n.attr("type") == Some("application/ld+json"))
-        .map(|x| x.text())
-        .nth(0)
-        .ok_or_else(|| "The page didn't have structured data")?;
-    let webpage = webpage_url.to_string();
-
-    Ok(ScrapeRes {
-        all_links,
-        structured_data,
-        webpage,
-    })
-}
-
+/// The main thread function that parses command line arguments, reads webpage links from
+/// the input file and launches the thread pool, waits for it to finish and writes collected
+/// data back on disk.
 fn main() -> Result<()> {
     // Matching our command-line arguments
     // Clap also creates a nice help page for our program
@@ -200,12 +38,20 @@ fn main() -> Result<()> {
                 .long("out_file")
                 .takes_value(true)
                 .help("Output file for collected structured data"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("threads_num")
                 .short("t")
                 .long("threads")
                 .takes_value(true)
                 .help("Number of threads (workers) in the thread pool"),
+        )
+        .arg(
+            Arg::with_name("page_limit")
+                .short("l")
+                .long("limit")
+                .takes_value(true)
+                .help("Number of pages to crawl until stopping"),
         ).get_matches();
 
     let input_file = matches
@@ -222,11 +68,18 @@ fn main() -> Result<()> {
         .parse()
         .expect("Provide a valid number of threads!");
 
+    let webpage_limit: usize = matches
+        .value_of("page_limit")
+        .expect("Provide a valid number of threads!")
+        .parse()
+        .unwrap_or(1024);
+
     let user_agent: String = "rust-crawler-mini-google-ucu".to_string();
 
     // Create vectors to save webpages we have to crawl and structured data on them
     let mut webpages: Vec<String> = vec![];
     let mut visited_webpages: HashSet<String> = HashSet::new();
+    let mut total_pages_sent: usize = 0;
     let mut structured_data: HashMap<String, String> = HashMap::new();
 
     // Reading the input file with URLs
@@ -245,12 +98,11 @@ fn main() -> Result<()> {
         .unwrap()
         .to_string();
 
-    // Creating a thread pool with scrapper workers to send URLs to
+    // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
 
     // A nice TUI debug interface
     // TODO: Add a nice way to see what each thread is doing right now
-    let webpage_limit: usize = 1024;
     let pb = ProgressBar::new(webpage_limit as u64);
     pb.set_style(
         ProgressStyle::default_bar()
@@ -261,15 +113,26 @@ fn main() -> Result<()> {
 
     // Crawling through all webpages
     while visited_webpages.len() < webpage_limit {
-        match webpages.pop() {
-            Some(webpage) => {
-                if !visited_webpages.contains(&webpage) {
-                    pool.url_sender.send(webpage).unwrap();
+        // Send new urls to the scrapper
+        let mut sent_webpages: Vec<String> = vec![];
+
+        // TODO: Think of something more flexible and nice
+        if webpages.len() > 20 && total_pages_sent < webpage_limit * 2 {
+            while sent_webpages.len() < 20 {
+                match webpages.pop() {
+                    Some(webpage) => {
+                        if !visited_webpages.contains(&webpage) {
+                            sent_webpages.push(webpage);
+                        }
+                    }
+                    None => (),
                 }
             }
-            None => (),
+            total_pages_sent += sent_webpages.len();
+            pool.url_sender.send(sent_webpages).unwrap();
         }
 
+        // Try to receive structured data from our end of the channel
         match pool.sd_receiver.try_recv() {
             Ok((url, sd)) => {
                 structured_data.insert(url.clone(), sd);
@@ -279,6 +142,7 @@ fn main() -> Result<()> {
             Err(_) => (),
         };
 
+        // Try to receive newly collected links from our end of the channel
         match pool.new_url_receiver.try_recv() {
             Ok(new_urls) => {
                 //println!("Received {} new URLs", new_urls.len());
