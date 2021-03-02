@@ -1,75 +1,77 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="field">
-    <div class="columns">
-        <div class="column is-1">
+    <div class="field">
+        <div class="columns">
+            <div class="column is-1">
             <span class="icon is-large">
                 <i class="fa fa-meh-o"></i>
             </span>
-        </div>
-        <div class="column">
-            <p class="control has-icons-right">
-                <label>
-                    <input class="input" type="text" placeholder="Search">
-                </label>
-                <span class="icon is-small is-right">
+            </div>
+            <div class="column">
+                <p class="control has-icons-right">
+                    <label>
+                        <input class="input" type="text" placeholder="Search">
+                    </label>
+                    <span class="icon is-small is-right">
                 <i class="fa fa-search"></i>
                 </span>
-            </p>
-        </div>
-        <div class="column is-3">
-            <div class="dropdown is-hoverable">
-                <div class="dropdown-trigger">
-                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                        <span>Search Language</span>
-                        <span class="icon is-small">
+                </p>
+            </div>
+            <div class="column is-3">
+                <div class="dropdown is-hoverable">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                            <span>Search Language</span>
+                            <span class="icon is-small">
                         <i class="fa fa-angle-down" aria-hidden="true"></i>
                         </span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                    <div class="dropdown-content">
-                        <a href="#" class="dropdown-item is-active">
-                            English
-                        </a>
-                        <a class="dropdown-item">
-                            Українська
-                        </a>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                        <div class="dropdown-content">
+                            <a href="#" class="dropdown-item is-active">
+                                English
+                            </a>
+                            <a class="dropdown-item">
+                                Українська
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        <ul class="nostyle home">
+            {% if paginator %}
+                {% for page in paginator.pages %}
+                    <li class="section">
+                        <div class="card">
+                            <a href="{{ page.permalink | safe }}">
+                                <div class="card-content">
+                                    <h2 class="title is-4"> {{ page.title }}</h2>
+                                    <p class="subtitle">{{ page.path }}</p>
+                                    <p class="subtitle">{{ page.description }}</p>
+                                </div>
+                            </a>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% endif %}
+            <div style="text-align: center">
+                <h2>
+                    {% if paginator.previous %}
+                        <a class="active" href="{{ paginator.previous }}"><i class="fa fa-arrow-left"></i></a>
+                    {% else %}
+                        <span class="inactive"><i class="fa fa-arrow-left"></i></span>
+                    {% endif %}
+                    {{ paginator.current_index }} page
+                    {% if paginator.next %}
+                        <a class="active" href="{{ paginator.next }}"><i class="fa fa-arrow-right"></i></a>
+                    {% else %}
+                        <span class="inactive"><i class="fa fa-arrow-right"></i></span>
+                    {% endif %}
+                </h2>
+            </div>
+        </ul>
     </div>
-    <ul class="nostyle home">
-        {% if paginator %}
-        {% for page in paginator.pages %}
-        <li class="card">
-            <a href="{{ page.permalink | safe }}">
-                <div class="card-content">
-                    <h2 class="title is-4"> {{ page.title }}</h2>
-                    <p class="subtitle">{{ page.path }}</p>
-                    <p class="subtitle">{{ page.description }}</p>
-                </div>
-            </a>
-        </li>
-        {% endfor %}
-        {% endif %}
-        <div style="text-align: center">
-            <h2>
-                {% if paginator.previous %}
-                <a class="active" href="{{ paginator.previous }}">&lt;</a>
-                {% else %}
-                <span class="inactive">&lt;</span>
-                {% endif %}
-                {{ paginator.current_index }} page
-                {% if paginator.next %}
-                <a class="active" href="{{ paginator.next }}">&gt;</a>
-                {% else %}
-                <span class="inactive">&gt;</span>
-                {% endif %}
-            </h2>
-        </div>
-    </ul>
-</div>
 {% endblock content %}
