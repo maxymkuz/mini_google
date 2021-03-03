@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  db:
+    build: ./database/
+    ports:
+      - 5405:5432
+    restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  python_app :
+    build: ./python_app/
+    depends_on:
+      - db
+
+
