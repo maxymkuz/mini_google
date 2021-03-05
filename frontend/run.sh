@@ -1,0 +1,1 @@
+docker run --rm -d -p 0.0.0.0:5000:5000 --name zola-site zola-site:latest

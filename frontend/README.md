@@ -13,8 +13,17 @@ zola build
 zola serve
 ```
 ### Usage (with Docker):
+To build container:
 ```bash
 ./build.sh
+```
+To run container (site will be available at http://0.0.0.0:5000/):
+```bash
+./run.sh
+```
+To stop container:
+```bash
+./stop.sh
 ```
 ## Probable query format:
 (Still needs more discussion.)
