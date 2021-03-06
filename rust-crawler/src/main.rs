@@ -3,6 +3,7 @@
 //!
 //! It is one of two versions of such a crawler (the other being
 //! developed in Python at https://github.com/maxymkuz/mini_google )
+use chrono::{NaiveDate, Utc};
 use clap::{App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
@@ -175,11 +176,13 @@ async fn main() -> Result<()> {
 
                 // TODO: Start collecting text from the website, add date collection etc.
                 // Send the collected data into SQL database
+                let now: NaiveDate = Utc::now().date().naive_utc();
+
                 client
                     .query(
                         "INSERT INTO websites_en (url, date_added, site_text, tokenized) \
-                    VALUES ('$1', '$2', '$3', to_tsvector('$4'));",
-                        &[&url, &"2021-04-06", &full_text, &full_text],
+                    VALUES ($1, $2, $3, to_tsvector($4));",
+                        &[&url, &now, &full_text, &full_text],
                     )
                     .await?;
             }
@@ -192,7 +195,7 @@ async fn main() -> Result<()> {
     // Check what we've sent to the SQL database
     println!("We have visited {} webpages", visited_webpages.len());
     let rows = client.query("SELECT * FROM websites_en", &[]).await?;
-    println!("{:?}", rows);
+    //println!("{:?}", rows);
 
     // Opening an output file
     let mut output = File::create(output_file)?;
