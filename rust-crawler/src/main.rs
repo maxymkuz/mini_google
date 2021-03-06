@@ -4,13 +4,12 @@
 //! It is one of two versions of such a crawler (the other being
 //! developed in Python at https://github.com/maxymkuz/mini_google )
 use clap::{App, Arg};
-use futures::TryStreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use tokio_postgres::{Error, NoTls};
+use tokio_postgres::NoTls;
 
 mod scrape;
 mod thread_pool;
@@ -167,7 +166,7 @@ async fn main() -> Result<()> {
 
         // Try to receive structured data and newly collected links from our end of the channel
         match pool.new_data_receiver.try_recv() {
-            Ok((url, sd, new_urls)) => {
+            Ok((url, sd, new_urls, full_text)) => {
                 //println!("Received {} new URLs", new_urls.len());
                 structured_data.insert(url.clone(), sd);
                 visited_webpages.insert(url.clone());
@@ -180,7 +179,7 @@ async fn main() -> Result<()> {
                     .query(
                         "INSERT INTO websites_en (url, date_added, site_text, tokenized) \
                     VALUES ('$1', '$2', '$3', to_tsvector('$4'));",
-                        &[&url, &"2021-04-06", &"some text", &"some text"],
+                        &[&url, &"2021-04-06", &full_text, &full_text],
                     )
                     .await?;
             }

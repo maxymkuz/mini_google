@@ -32,7 +32,7 @@ error_chain! {
 pub struct ThreadPool {
     workers: Vec<Worker>,
     pub url_sender: mpsc::Sender<Vec<String>>,
-    pub new_data_receiver: mpsc::Receiver<(String, String, HashSet<String>)>,
+    pub new_data_receiver: mpsc::Receiver<(String, String, HashSet<String>, String)>,
 }
 
 impl ThreadPool {
@@ -71,7 +71,7 @@ impl ThreadPool {
 #[derive(Clone)]
 struct PageData {
     url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
-    new_data_sender: mpsc::Sender<(String, String, HashSet<String>)>,
+    new_data_sender: mpsc::Sender<(String, String, HashSet<String>, String)>,
     user_agent: String,
     high_level_domain: String,
 }
@@ -85,9 +85,10 @@ pub struct ScrapeData {
 
 /// A struct that `scrape` function returns after scrapping a webpage
 pub struct ScrapeRes {
+    pub webpage: String,
     pub all_links: HashSet<String>,
     pub structured_data: String,
-    pub webpage: String,
+    pub full_text: String,
 }
 
 /// A single thread in the `ThreadPool`, working on a given `scrape` function and containing its
@@ -142,6 +143,7 @@ impl Worker {
                                                     scrape_res.webpage,
                                                     scrape_res.structured_data,
                                                     scrape_res.all_links,
+                                                    scrape_res.full_text,
                                                 ))
                                                 .expect("Other end of the channel closed");
 

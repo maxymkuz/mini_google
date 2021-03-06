@@ -4,7 +4,7 @@
 use crate::{Result, ScrapeData, ScrapeRes};
 use reqwest::Url;
 use select::document::Document;
-use select::predicate::{Name, Predicate};
+use select::predicate::{Element, Name, Predicate};
 use std::collections::HashSet;
 
 /// A scraper for a single webpage. Creates an HTTP client to connect to it,
@@ -26,12 +26,17 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
     // Sending an asynchronous get request, unwrapping the `Result` we get
     let res = client.get(webpage_url).send().await?.text().await?;
 
+    let res = Document::from(&res[..]);
+
+    // Scrapping all text from the page
+    let full_text = get_full_text(&res);
+
     // Finding all links on the page
     let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
 
     // Searching for structured data on the page.
     // We are looking for <script type="application/ld+json"> and we need all of its contents
-    let structured_data: String = Document::from(res.as_str())
+    let structured_data: String = res
         .find(Name("script"))
         .filter(|n| n.attr("type") == Some("application/ld+json"))
         .map(|x| x.text())
@@ -40,19 +45,44 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
     let webpage = webpage_url.to_string();
 
     Ok(ScrapeRes {
+        webpage,
         all_links,
         structured_data,
-        webpage,
+        full_text,
     })
+}
+
+/// Receives an HTML text file, parses it and returns only the text on it without
+/// the tags and attributes
+fn get_full_text(html: &Document) -> String {
+    let blacklist: HashSet<&'static str> =
+        ["style", "html", "meta", "head", "script", "p", "a", "head"]
+            .iter()
+            .cloned()
+            .collect();
+    html.find(Element)
+        .filter(|n| match n.name() {
+            Some(name) => !blacklist.contains(name),
+            None => true,
+        })
+        .map(|x| x.text())
+        .collect::<Vec<String>>()
+        .join(" ")
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ")
 }
 
 /// Looks for all elements in the HTML body that are valid links, returning unique ones.
 /// Requires the `base_url` parameter - the page from which the link was collected to
 /// work with relative links properly, and `high_level_domain` parameter to discard
 /// links we do not want to crawl at all.
-fn get_links_from_html(html: &str, base_url: &str, high_level_domain: &str) -> HashSet<String> {
-    Document::from(html)
-        .find(Name("a").or(Name("link")))
+fn get_links_from_html(
+    html: &Document,
+    base_url: &str,
+    high_level_domain: &str,
+) -> HashSet<String> {
+    html.find(Name("a").or(Name("link")))
         .filter_map(|n| n.attr("href"))
         .filter_map(|x| normalize_url(x, base_url, high_level_domain))
         .collect::<HashSet<String>>()
