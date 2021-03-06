@@ -19,6 +19,7 @@ error_chain! {
       foreign_links {
           ReqError(reqwest::Error);
           IoError(std::io::Error);
+            SqlError(sqlx::Error);
       }
 }
 
@@ -31,8 +32,7 @@ error_chain! {
 pub struct ThreadPool {
     workers: Vec<Worker>,
     pub url_sender: mpsc::Sender<Vec<String>>,
-    pub new_url_receiver: mpsc::Receiver<HashSet<String>>,
-    pub sd_receiver: mpsc::Receiver<(String, String)>,
+    pub new_data_receiver: mpsc::Receiver<(String, String, HashSet<String>)>,
 }
 
 impl ThreadPool {
@@ -42,14 +42,12 @@ impl ThreadPool {
         assert!(size > 0);
 
         let (url_sender, url_receiver) = mpsc::channel();
-        let (new_url_sender, new_url_receiver) = mpsc::channel();
-        let (sd_sender, sd_receiver) = mpsc::channel();
+        let (new_data_sender, new_data_receiver) = mpsc::channel();
         let url_receiver = Arc::new(Mutex::new(url_receiver));
 
         let page_data = PageData {
             url_receiver,
-            new_url_sender,
-            sd_sender,
+            new_data_sender,
             user_agent,
             high_level_domain,
         };
@@ -64,8 +62,7 @@ impl ThreadPool {
         ThreadPool {
             workers,
             url_sender,
-            new_url_receiver,
-            sd_receiver,
+            new_data_receiver,
         }
     }
 }
@@ -74,8 +71,7 @@ impl ThreadPool {
 #[derive(Clone)]
 struct PageData {
     url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
-    new_url_sender: mpsc::Sender<HashSet<String>>,
-    sd_sender: mpsc::Sender<(String, String)>,
+    new_data_sender: mpsc::Sender<(String, String, HashSet<String>)>,
     user_agent: String,
     high_level_domain: String,
 }
@@ -139,21 +135,17 @@ impl Worker {
                                     //println!("Worker {} got URL {}", id, webpage_url);
                                     match scrape(scrape_data).await {
                                         Ok(scrape_res) => {
-                                            // Send newly collected links
+                                            // Send newly collected links and structured data
                                             page_data
-                                                .new_url_sender
-                                                .send(scrape_res.all_links)
-                                                .expect("Other end of the channel closed");
-
-                                            // Send collected structured data
-                                            // TODO: Add the whole scrapped text and possibly headers as a separate entity
-                                            page_data
-                                                .sd_sender
+                                                .new_data_sender
                                                 .send((
                                                     scrape_res.webpage,
                                                     scrape_res.structured_data,
+                                                    scrape_res.all_links,
                                                 ))
                                                 .expect("Other end of the channel closed");
+
+                                            // TODO: Add the whole scrapped text and possibly headers as a separate entity
                                         }
                                         Err(_) => (),
                                     };

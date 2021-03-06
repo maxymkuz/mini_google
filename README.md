@@ -17,7 +17,18 @@ temporarily available here.
 
 Progress can be tracked [over here](./PROGRESS.md).
 
-## Purpose and usage:
+## Usage:
+
+Launch each container independently with instructions in respective directories,
+or launch all of them together:
+```
+# WARNING!!!! Rust builds a static binary and it takes a lot of CPU time
+# do so, I am going to try to cache it somehow or switch to running on
+# a non-scratch image since we already do this with Python. Have no idea.
+docker-compose build
+
+docker-compose up
+```
 
 ## Prerequisites:
 

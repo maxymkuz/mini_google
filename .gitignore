@@ -1,6 +1,6 @@
-/postgres-data/
 /target
 out.txt
 *.DS_Store
 *.venv/
 *.idea/
+postgres-data

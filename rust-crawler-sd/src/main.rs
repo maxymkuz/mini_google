@@ -6,6 +6,7 @@
 use clap::{App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
+use sqlx::postgres::PgPoolOptions;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -16,10 +17,8 @@ use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool};
 
 // TODO: Write a couple of tests
 
-/// The main thread function that parses command line arguments, reads webpage links from
-/// the input file and launches the thread pool, waits for it to finish and writes collected
-/// data back on disk.
-fn main() -> Result<()> {
+/// Parses command line arguments, returns a tuple with them
+fn arg_parser() -> (String, String, String, usize, usize) {
     // Matching our command-line arguments
     // Clap also creates a nice help page for our program
     let matches = App::new("Rust Structured Data Crawler")
@@ -56,11 +55,13 @@ fn main() -> Result<()> {
 
     let input_file = matches
         .value_of("input_file")
-        .expect("Provide an input file!");
+        .expect("Provide an input file!")
+        .to_string();
 
     let output_file = matches
         .value_of("output_file")
-        .expect("Provide an output file!");
+        .expect("Provide an output file!")
+        .to_string();
 
     let threads_num: usize = matches
         .value_of("threads_num")
@@ -70,17 +71,34 @@ fn main() -> Result<()> {
 
     let webpage_limit: usize = matches
         .value_of("page_limit")
-        .expect("Provide a valid number of threads!")
+        .unwrap_or("1024")
         .parse()
-        .unwrap_or(1024);
+        .expect("Provide a valid webpage limit!");
 
     let user_agent: String = "rust-crawler-mini-google-ucu".to_string();
 
+    // Returns the parsed arguments
+    (
+        input_file,
+        output_file,
+        user_agent,
+        threads_num,
+        webpage_limit,
+    )
+}
+/// The main thread function that parses command line arguments, reads webpage links from
+/// the input file and launches the thread pool, waits for it to finish and writes collected
+/// data back on disk.
+#[tokio::main]
+async fn main() -> Result<()> {
     // Create vectors to save webpages we have to crawl and structured data on them
     let mut webpages: Vec<String> = vec![];
     let mut visited_webpages: HashSet<String> = HashSet::new();
     let mut total_pages_sent: usize = 0;
     let mut structured_data: HashMap<String, String> = HashMap::new();
+
+    // Parsing the command line arguments
+    let (input_file, output_file, user_agent, threads_num, webpage_limit) = arg_parser();
 
     // Reading the input file with URLs
     let input = File::open(input_file)?;
@@ -97,6 +115,12 @@ fn main() -> Result<()> {
         .host_str()
         .unwrap()
         .to_string();
+
+    // Establishing the database connection pool
+    let db_pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect("postgres://admin:postgres@db:5432/database")
+        .await?;
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
@@ -132,21 +156,16 @@ fn main() -> Result<()> {
             pool.url_sender.send(sent_webpages).unwrap();
         }
 
-        // Try to receive structured data from our end of the channel
-        match pool.sd_receiver.try_recv() {
-            Ok((url, sd)) => {
-                structured_data.insert(url.clone(), sd);
-                visited_webpages.insert(url);
-                pb.set_position(visited_webpages.len() as u64);
-            }
-            Err(_) => (),
-        };
-
-        // Try to receive newly collected links from our end of the channel
-        match pool.new_url_receiver.try_recv() {
-            Ok(new_urls) => {
+        // Try to receive structured data and newly collected links from our end of the channel
+        match pool.new_data_receiver.try_recv() {
+            Ok((url, sd, new_urls)) => {
                 //println!("Received {} new URLs", new_urls.len());
+                structured_data.insert(url.clone(), sd);
+                visited_webpages.insert(url.clone());
                 webpages.extend(new_urls);
+                pb.set_position(visited_webpages.len() as u64);
+                sqlx::query(&format!("INSERT INTO websites_en (url, date_added, site_text, tokenized) VALUES ('{}', '{}', '{}', to_tsvector('{}'));",
+                url, "2021-04-06", "some text", "some text")).execute(&db_pool).await?;
             }
             Err(_) => (),
         };
