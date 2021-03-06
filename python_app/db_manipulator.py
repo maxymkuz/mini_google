@@ -9,7 +9,7 @@ db_pass = 'postgres'
 db_host = 'db'
 db_port = '5432'
 
-# Connec to the database
+# Connection to the database
 db_string = 'postgres://{}:{}@{}:{}/{}'.format(db_user, db_pass, db_host,
                                                db_port, db_name)
 db = create_engine(db_string)
@@ -76,6 +76,26 @@ def delete_all_entries():
     print("Successfully deleted all entries from websites_en")
 
 
+def get_ranked_rows_by_query(input_query, num_responses):
+    """
+    Runs through all tokenized rows, and returns the list of {num_responses} elements
+    each of which is in the form of (website url, site_text), that are ranked in the descending
+    order by how much it matches the query
+    :param input_query: string            Example: 'Data | scrapping | (computer & program)'
+    :param num_responses: int
+    :return: list
+    """
+    db_query = f"""
+    SELECT url, ts_rank_cd(tokenized, to_tsquery('{input_query}')), site_text AS rank
+    FROM websites_en, to_tsquery('{input_query}') query
+    WHERE query @@ tokenized
+    ORDER BY rank DESC
+    LIMIT {num_responses};
+    """
+    result_set = db.execute(db_query)
+    return [r for r in result_set]
+
+
 if __name__ == '__main__':
     # От приклади
     print('Application started')
@@ -90,3 +110,5 @@ if __name__ == '__main__':
     print("BY URL", get_row_by_url('url1'))
     print("ALLL   ", get_all_rows())
     time.sleep(3)
+    print('_'*20)
+    print(get_ranked_rows_by_query("some & 2", 2))

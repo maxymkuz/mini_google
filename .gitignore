@@ -1,4 +1,5 @@
-target
+/postgres-data/
+/target
 out.txt
 *.DS_Store
 *.venv/
