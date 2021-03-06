@@ -14,3 +14,14 @@ Rust - ffc7d636f6a1e335b1b1fc61ddb666088197f11d . Python - 071e99e6cd0da1a94f30a
 which tables and columns we need etc.
 
 - [x] A simple frontend prototype. Documented query format from the frontend to the database - 921ccf5d55a7ce76c30bc2a0e4307ceec5b9a716
+
+
+## Week 2
+- [x] Data base with python backend for it.
+
+- [x] Updated crawlers to connect them to data base.
+
+- [x] Full docker compose file with data base, crawlers and frontend.
+
+- [x] Figure out how to work with queries in different languages, + Ukrainian language tokenization.
+
