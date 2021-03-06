@@ -8,16 +8,16 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
 
-  python_app :
+  python_app:
     build: ./python_app/
     depends_on:
       - db
 
-  # rust_app:
-  #   build: ./rust-crawler-sd/
-  #   depends_on:
-  #     - db
-  #   command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
+  #rust_app:
+    #build: ./rust-crawler/
+    #depends_on:
+      #- db
+    #command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
 
   frontend:
     build: ./frontend/

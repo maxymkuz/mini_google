@@ -4,12 +4,13 @@
 //! It is one of two versions of such a crawler (the other being
 //! developed in Python at https://github.com/maxymkuz/mini_google )
 use clap::{App, Arg};
+use futures::TryStreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
-use sqlx::postgres::PgPoolOptions;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use tokio_postgres::{Error, NoTls};
 
 mod scrape;
 mod thread_pool;
@@ -117,13 +118,21 @@ async fn main() -> Result<()> {
         .to_string();
 
     // Establishing the database connection pool
-    let db_pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect("postgres://admin:postgres@db:5432/database")
-        .await?;
+    let (client, connection) = tokio_postgres::connect(
+        "dbname=database user=admin password=postgres host=db port=5432",
+        NoTls,
+    )
+    .await?;
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
+
+    // Spawn the connector in a separate async task
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
 
     // A nice TUI debug interface
     // TODO: Add a nice way to see what each thread is doing right now
@@ -164,8 +173,16 @@ async fn main() -> Result<()> {
                 visited_webpages.insert(url.clone());
                 webpages.extend(new_urls);
                 pb.set_position(visited_webpages.len() as u64);
-                sqlx::query(&format!("INSERT INTO websites_en (url, date_added, site_text, tokenized) VALUES ('{}', '{}', '{}', to_tsvector('{}'));",
-                url, "2021-04-06", "some text", "some text")).execute(&db_pool).await?;
+
+                // TODO: Start collecting text from the website, add date collection etc.
+                // Send the collected data into SQL database
+                client
+                    .query(
+                        "INSERT INTO websites_en (url, date_added, site_text, tokenized) \
+                    VALUES ('$1', '$2', '$3', to_tsvector('$4'));",
+                        &[&url, &"2021-04-06", &"some text", &"some text"],
+                    )
+                    .await?;
             }
             Err(_) => (),
         };
@@ -173,7 +190,10 @@ async fn main() -> Result<()> {
 
     pb.finish_with_message("Finished collecting data");
 
+    // Check what we've sent to the SQL database
     println!("We have visited {} webpages", visited_webpages.len());
+    let rows = client.query("SELECT * FROM websites_en", &[]).await?;
+    println!("{:?}", rows);
 
     // Opening an output file
     let mut output = File::create(output_file)?;

@@ -14,4 +14,4 @@ clap = "2.33.3"
 error-chain = "0.12.4"
 indicatif = "0.15.0"
 futures = "0.3.6"
-sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres" ] }
+tokio-postgres = "0.7.0"

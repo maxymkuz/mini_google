@@ -19,7 +19,7 @@ error_chain! {
       foreign_links {
           ReqError(reqwest::Error);
           IoError(std::io::Error);
-            SqlError(sqlx::Error);
+            SqlError(tokio_postgres::Error);
       }
 }
 

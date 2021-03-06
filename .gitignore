@@ -1,4 +1,4 @@
-/target
+target
 out.txt
 *.DS_Store
 *.venv/
