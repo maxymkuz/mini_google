@@ -13,11 +13,11 @@ services:
     depends_on:
       - db
 
-  rust_app:
-    build: ./rust-crawler-sd/
-    depends_on:
-      - db
-    command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
+  # rust_app:
+  #   build: ./rust-crawler-sd/
+  #   depends_on:
+  #     - db
+  #   command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
 
   frontend:
     build: ./frontend/

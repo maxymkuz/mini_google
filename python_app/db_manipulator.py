@@ -9,10 +9,17 @@ db_pass = 'postgres'
 db_host = 'db'
 db_port = '5432'
 
-# Connection to the database
-db_string = 'postgres://{}:{}@{}:{}/{}'.format(db_user, db_pass, db_host,
-                                               db_port, db_name)
-db = create_engine(db_string)
+
+# Connection to the database, sleep and wait if database is not ready yet
+while True:
+    try:
+        db_string = 'postgres://{}:{}@{}:{}/{}'.format(db_user, db_pass, db_host,
+                                                    db_port, db_name)
+        db = create_engine(db_string)
+        break
+    except:
+        print("Failed to connet to database, reconnecting in 1 second")
+        time.sleep(1)
 
 
 def insert_row(row, tokenize=True):
