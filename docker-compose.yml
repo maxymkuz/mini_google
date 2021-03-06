@@ -19,4 +19,8 @@ services:
       - db
     command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
 
+  frontend:
+    build: ./frontend/
+    ports:
+      - 5000:5000
 
