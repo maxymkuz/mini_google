@@ -9,14 +9,22 @@
             </span>
             </div>
             <div class="column">
-                <p class="control has-icons-right">
-                    <label>
-                        <input class="input is-info" type="text" placeholder="Search">
-                    </label>
-                    <span class="icon is-small is-right">
-                <i class="fa fa-search"></i>
-                </span>
-                </p>
+                {#                TODO: Here we will specify, where to send search data. #}
+                <form action="http://localhost:5001" method="post">
+                    <div class="field has-addons">
+                        <p class="control is-expanded">
+                            <label>
+                                <input class="input is-link" autofocus type="text" placeholder="Search"
+                                       name="user_search">
+                            </label>
+                        </p>
+                        <div class="control">
+                            <button type="submit" class="button is-link">
+                                <i class="fa fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="column is-3">
                 <div class="dropdown is-hoverable">

@@ -6,6 +6,8 @@ Basic UI (to be) implemented using Rust.
 
 * Zola 
 
+* Flask (currently used locally for testing sending and processing data)
+
 ### Usage (without Docker):
 ```bash
 cd zola-webpage
