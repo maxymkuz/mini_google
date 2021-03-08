@@ -96,7 +96,7 @@ pub struct ScrapeRes {
 #[allow(dead_code)]
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
@@ -114,11 +114,12 @@ impl Worker {
 
                         // If the other end has disconnected, we should also quit the loop
                         let webpage_urls = match webpage_urls {
-                            Ok(webpage_url) => webpage_url,
+                            Ok(webpage_urls) => webpage_urls,
                             Err(RecvError) => {
                                 break;
                             }
                         };
+
                         //println!("Worker {} got URLs {:?}", id, webpage_urls);
                         let webpage_urls = stream::iter(webpage_urls);
 
@@ -145,7 +146,7 @@ impl Worker {
                                                     scrape_res.all_links,
                                                     scrape_res.full_text,
                                                 ))
-                                                .expect("Other end of the channel closed");
+                                                .ok();
 
                                             // TODO: Add the whole scrapped text and possibly headers as a separate entity
                                         }
@@ -159,6 +160,9 @@ impl Worker {
                 })
         });
 
-        Worker { id, thread }
+        Worker {
+            id,
+            thread: Some(thread),
+        }
     }
 }

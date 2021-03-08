@@ -4,3 +4,6 @@ out.txt
 *.venv/
 *.idea/
 postgres-data
+flamegraph.svg
+perf.data
+perf.data.old

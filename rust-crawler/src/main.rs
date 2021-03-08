@@ -95,7 +95,6 @@ async fn main() -> Result<()> {
     // Create vectors to save webpages we have to crawl and structured data on them
     let mut webpages: Vec<String> = vec![];
     let mut visited_webpages: HashSet<String> = HashSet::new();
-    let mut total_pages_sent: usize = 0;
     let mut structured_data: HashMap<String, String> = HashMap::new();
 
     // Parsing the command line arguments
@@ -118,21 +117,24 @@ async fn main() -> Result<()> {
         .to_string();
 
     // Establishing the database connection pool
-    let (client, connection) = tokio_postgres::connect(
-        "dbname=database user=admin password=postgres host=db port=5432",
-        NoTls,
-    )
-    .await?;
+    //let (client, connection) = tokio_postgres::connect(
+    //"dbname=database user=admin password=postgres host=db port=5432",
+    //NoTls,
+    //)
+    //.await?;
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
 
+    // Opening an output file
+    let mut output = File::create(output_file)?;
+
     // Spawn the connector in a separate async task
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
-    });
+    // tokio::spawn(async move {
+    //if let Err(e) = connection.await {
+    //eprintln!("connection error: {}", e);
+    //}
+    //});
 
     // A nice TUI debug interface
     // TODO: Add a nice way to see what each thread is doing right now
@@ -144,31 +146,39 @@ async fn main() -> Result<()> {
     );
     pb.set_message("Collecting data from webpages...");
 
+    // In order not to overwhelm the channel we have to send just enough urls through
+    let mut needed_sends: usize = threads_num + 10;
+    let urls_per_send = 100;
+
     // Crawling through all webpages
     while visited_webpages.len() < webpage_limit {
-        // Send new urls to the scrapper
-        let mut sent_webpages: Vec<String> = vec![];
-
         // TODO: Think of something more flexible and nice
-        if webpages.len() > 20 && total_pages_sent < webpage_limit * 2 {
-            while sent_webpages.len() < 20 {
+        if webpages.len() > urls_per_send && needed_sends > 0 {
+            // Send new urls to the scrapper
+            let mut sent_webpages: Vec<String> = vec![];
+            while sent_webpages.len() < urls_per_send {
                 match webpages.pop() {
                     Some(webpage) => {
                         if !visited_webpages.contains(&webpage) {
                             sent_webpages.push(webpage);
                         }
                     }
-                    None => (),
+                    None => {
+                        break;
+                    }
                 }
             }
-            total_pages_sent += sent_webpages.len();
             pool.url_sender.send(sent_webpages).unwrap();
+            needed_sends -= 1;
         }
 
         // Try to receive structured data and newly collected links from our end of the channel
         match pool.new_data_receiver.try_recv() {
             Ok((url, sd, new_urls, full_text)) => {
                 //println!("Received {} new URLs", new_urls.len());
+                // Writing collected structured data to the file
+                write!(output, "{:?}\n", url)?;
+
                 structured_data.insert(url.clone(), sd);
                 visited_webpages.insert(url.clone());
                 webpages.extend(new_urls);
@@ -178,13 +188,16 @@ async fn main() -> Result<()> {
                 // Send the collected data into SQL database
                 let now: NaiveDate = Utc::now().date().naive_utc();
 
-                client
-                    .query(
-                        "INSERT INTO websites_en (url, date_added, site_text, tokenized) \
-                    VALUES ($1, $2, $3, to_tsvector($4));",
-                        &[&url, &now, &full_text, &full_text],
-                    )
-                    .await?;
+                //client
+                //.query(
+                //"INSERT INTO websites_en (url, date_added, site_text, tokenized) \
+                //VALUES ($1, $2, $3, to_tsvector($4));",
+                //&[&url, &now, &full_text, &full_text],
+                //)
+                //.await?;
+
+                // We've just received scrapped data, we need to send new set of URLs back
+                needed_sends += 1;
             }
             Err(_) => (),
         };
@@ -194,16 +207,12 @@ async fn main() -> Result<()> {
 
     // Check what we've sent to the SQL database
     println!("We have visited {} webpages", visited_webpages.len());
-    let rows = client.query("SELECT * FROM websites_en", &[]).await?;
+    //let rows = client.query("SELECT * FROM websites_en", &[]).await?;
     //println!("{:?}", rows);
 
-    // Opening an output file
-    let mut output = File::create(output_file)?;
-
-    // Writing collected structured data to the file
-    for sd in structured_data {
-        write!(output, "{:?}\n", sd)?;
-    }
+    // Dropping the thread pool and joining all the threads
+    println!("Hold on while we close the thread pool...");
+    drop(pool);
 
     // We have to return Ok with an empty () inside of it at the end of main since it returns a
     // Result for us to be able to use the question mark operator

@@ -16,3 +16,6 @@ error-chain = "0.12.4"
 indicatif = "0.15.0"
 futures = "0.3.6"
 tokio-postgres = { version = "0.7.0", features = ["with-chrono-0_4"] }
+
+[profile.release]
+debug = true
