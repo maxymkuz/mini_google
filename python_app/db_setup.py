@@ -45,16 +45,15 @@ try:
 
     setup_table("websites_en", cursor)
 
+    # Твій код сюда якщо ще щось треба
+
+    # If we have finished talking to database, close the connection
+    if (connection):
+        cursor.close()
+        connection.close()
+        print("PostgreSQL connection is closed")
+
 except (Exception, Error) as error:
     print("Error while connecting to PostgreSQL", error)
 
-
-# Твій код сюда якщо ще щось треба
-
-
-# If we have finished talking to database, close the connection
-if (connection):
-    cursor.close()
-    connection.close()
-    print("PostgreSQL connection is closed")
 

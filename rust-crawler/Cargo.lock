@@ -1188,7 +1188,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-crawler-sd"
+name = "rust-crawler"
 version = "0.1.0"
 dependencies = [
  "chrono",

@@ -87,6 +87,7 @@ fn arg_parser() -> (String, String, String, usize, usize) {
         webpage_limit,
     )
 }
+
 /// The main thread function that parses command line arguments, reads webpage links from
 /// the input file and launches the thread pool, waits for it to finish and writes collected
 /// data back on disk.
@@ -117,24 +118,38 @@ async fn main() -> Result<()> {
         .to_string();
 
     // Establishing the database connection pool
-    //let (client, connection) = tokio_postgres::connect(
-    //"dbname=database user=admin password=postgres host=db port=5432",
-    //NoTls,
-    //)
-    //.await?;
+    let (client, connection) = tokio_postgres::connect(
+        "dbname=main_fts user=postgres password=postgres host=localhost port=5432",
+        NoTls,
+    )
+    .await?;
+
+    // Spawn the connector in a separate async task
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    // Creating the tables we need if they are not already created
+    client
+        .query(
+            "CREATE TABLE IF NOT EXISTS websites_en (
+	site_id SERIAL NOT NULL,
+	url TEXT NOT NULL,
+	date_added DATE NOT NULL,
+	last_modified DATE,
+	site_text TEXT NOT NULL,
+	tokenized TSVECTOR);",
+            &[],
+        )
+        .await?;
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
 
     // Opening an output file
     let mut output = File::create(output_file)?;
-
-    // Spawn the connector in a separate async task
-    // tokio::spawn(async move {
-    //if let Err(e) = connection.await {
-    //eprintln!("connection error: {}", e);
-    //}
-    //});
 
     // A nice TUI debug interface
     // TODO: Add a nice way to see what each thread is doing right now
@@ -153,12 +168,15 @@ async fn main() -> Result<()> {
     // Crawling through all webpages
     while visited_webpages.len() < webpage_limit {
         // TODO: Think of something more flexible and nice
+        // Send new urls to the scrapper
+        // I send a vector of URLs for the thread to process asynchronously
         if webpages.len() > urls_per_send && needed_sends > 0 {
-            // Send new urls to the scrapper
             let mut sent_webpages: Vec<String> = vec![];
             while sent_webpages.len() < urls_per_send {
                 match webpages.pop() {
                     Some(webpage) => {
+                        // TODO: Instead check whether the database contains this
+                        // url or that and its date
                         if !visited_webpages.contains(&webpage) {
                             sent_webpages.push(webpage);
                         }
@@ -177,7 +195,7 @@ async fn main() -> Result<()> {
             Ok((url, sd, new_urls, full_text)) => {
                 //println!("Received {} new URLs", new_urls.len());
                 // Writing collected structured data to the file
-                write!(output, "{:?}\n", url)?;
+                write!(output, "{}: {:?}\n\n", url, sd)?;
 
                 structured_data.insert(url.clone(), sd);
                 visited_webpages.insert(url.clone());
@@ -188,13 +206,13 @@ async fn main() -> Result<()> {
                 // Send the collected data into SQL database
                 let now: NaiveDate = Utc::now().date().naive_utc();
 
-                //client
-                //.query(
-                //"INSERT INTO websites_en (url, date_added, site_text, tokenized) \
-                //VALUES ($1, $2, $3, to_tsvector($4));",
-                //&[&url, &now, &full_text, &full_text],
-                //)
-                //.await?;
+                client
+                    .query(
+                        "INSERT INTO websites_en (url, date_added, site_text, tokenized) \
+                VALUES ($1, $2, $3, to_tsvector($4));",
+                        &[&url, &now, &full_text, &full_text],
+                    )
+                    .await?;
 
                 // We've just received scrapped data, we need to send new set of URLs back
                 needed_sends += 1;
@@ -205,10 +223,7 @@ async fn main() -> Result<()> {
 
     pb.finish_with_message("Finished collecting data");
 
-    // Check what we've sent to the SQL database
     println!("We have visited {} webpages", visited_webpages.len());
-    //let rows = client.query("SELECT * FROM websites_en", &[]).await?;
-    //println!("{:?}", rows);
 
     // Dropping the thread pool and joining all the threads
     println!("Hold on while we close the thread pool...");
