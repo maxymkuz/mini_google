@@ -136,13 +136,19 @@ class DataBaseTable:
         return [r for r in result_set]
 
 
+class DataBaseCursor(DataBaseTable):
+    def __init__(self, db_table):
+        self.db = db_table.db
+        self.table = db_table.table
+
+
 # TODO я потім красиво перепишу і фіч допишу, але поки хай робе як робе
 
 if __name__ == '__main__':
     # От приклади
     print(1)
     table = DataBaseTable(
-        database", "admin",
+        "database", "admin",
         "postgres", "db", 5432, "websites_en"
      )
     print('Application started')

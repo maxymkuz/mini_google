@@ -1,5 +1,5 @@
 from crawlers.crawlers import BSCrawler, CrawlersManager
-from database.db_manipulator import DataBaseTable
+from database.db_manipulator import DataBaseTable, DataBaseCursor
 import time
 import threading
 import sys
@@ -36,11 +36,12 @@ def crawl_all(depth, threads_num, in_file):
     :param in_file: str
     :return:
     """
-    crawlers = [BSCrawler() for i in range(threads_num)]
-    manager = CrawlersManager(crawlers, depth, DataBaseTable(
+    table = DataBaseTable(
             "database", "admin",
             "postgres", "db", 5432, "websites_en"
-            ))
+            )
+    crawlers = [BSCrawler(DataBaseCursor(table)) for i in range(threads_num)]
+    manager = CrawlersManager(crawlers, depth)
     print(1)
     with open(in_file) as f:
         manager.add_websites([line.strip() for line in f.readlines()])

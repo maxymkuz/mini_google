@@ -50,11 +50,8 @@ class AbstractCrawler(metaclass=abc.ABCMeta):
 
 
 class BSCrawler(AbstractCrawler):
-    def __init__(self):
-        """
-        Creates a crawler with its own mutex
-        """
-        self.mutex = threading.Lock()
+    def __init__(self, cursor):
+        self.cursor = cursor
 
     def scrape(self, url):
         """
@@ -134,19 +131,18 @@ class CrawlersManager:
     # code that shows us that the crawler finished its work
     FINISH_CODE = -1
 
-    def __init__(self, crawlers, max_depth, table):
+    def __init__(self, crawlers, max_depth):
         """
         Initializes CrawleManager with given list of crawles,
-        maximal depth of going into links and database table
+        maximal depth of going into links
         :param crawlers: list
         :param max_depth: int
-        :param table: DataBaseTable
         :return:
         """
         self.crawlers = crawlers
-        self.table = table
         self.max_depth = max_depth
         self.websites = []
+        self.mutex = threading.Lock()
 
     def add_websites(self, links, depth=1):
         """
@@ -166,19 +162,18 @@ class CrawlersManager:
         :return: None if everything is ok and FinishCode in
         other cases
         """
-        self.crawlers[i].mutex.acquire()
+        self.mutex.acquire()
         if len(self.websites) > 0:
             link, depth = self.websites.pop(0)
         else:
             return CrawlersManager.FINISH_CODE
-        self.crawlers[i].mutex.release()
+        self.mutex.release()
 
         # already processed or bad url
         if link is None:
             return
-        self.crawlers[i].mutex.acquire()
-        rows = self.table.get_row_by_url(link)
-        self.crawlers[i].mutex.release()
+
+        rows = self.crawlers[i].cursor.get_row_by_url(link)
         date_added = None
 
         # if link is already in database
@@ -200,15 +195,15 @@ class CrawlersManager:
 
         # checks if the data is new
         if (date_added is None or new_modification_stamp > date_added):
-            self.crawlers[i].mutex.acquire()
-            self.table.insert_row(
+            self.crawlers[i].cursor.insert_row(
                 [
                     link, date.today().strftime("%Y-%d-%m"),
                     data[0]["text"],
                     new_modification_date
-                ]
+                ],
+                tokenize=False
             )
-
+            self.mutex.acquire()
             self.add_websites(data[1],
                               depth=depth + 1)
-            self.crawlers[i].mutex.release()
+            self.mutex.release()
