@@ -14,7 +14,7 @@ class DataBaseTable:
         using in the future
         All parameters can be strings
         """
-        # Connection to the database, 
+        # Connection to the database,
         # sleep and wait if database is not ready yet
         while True:
             try:
@@ -66,14 +66,16 @@ class DataBaseTable:
             if len(row) == 3:
                 self.db.execute(
                     sqlalchemy.text(
-                        f"INSERT INTO {self.table} (url, date_added, site_text) "
+                        f"INSERT INTO {self.table}"
+                        f" (url, date_added, site_text) "
                         f"VALUES ('{row[0]}', '{row[1]}', '{row[2]}');"
                         )
                 )
             elif len(row) == 4:  # with last modified column
                 self.db.execute(
                     sqlalchemy.text(
-                        f"INSERT INTO {self.table} (url, date_added, site_text, "
+                        f"INSERT INTO {self.table} "
+                        f"(url, date_added, site_text, "
                         f"last_modified) VALUES"
                         f" ('{row[0]}', '{row[1]}', '{row[2]}'"
                         f",'{row[3]}');"
@@ -139,14 +141,21 @@ class DataBaseTable:
 if __name__ == '__main__':
     # От приклади
     print(1)
-    table = DataBaseTable("database", "admin", "postgres", "db", 5432, "websites_en")
+    table = DataBaseTable(
+        database", "admin",
+        "postgres", "db", 5432, "websites_en"
+     )
     print('Application started')
 
     table.delete_all_entries()
     # while True:
     table.insert_row(('url1', '1977-07-23', 'some text'))
-    table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=True)
-    table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=False)
+    table.insert_row(
+        ('url2', '1977-07-23', 'some text 2 text', '2007-07-23'),
+        tokenize=True)
+    table.insert_row(
+        ('url2', '1977-07-23', 'some text 2 text', '2007-07-23'),
+        tokenize=False)
     table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'))
     table.insert_row(('url1', '1977-07-23', 'some text'), tokenize=False)
 

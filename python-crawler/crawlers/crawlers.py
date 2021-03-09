@@ -7,6 +7,10 @@ from datetime import date
 
 
 class AbstractCrawler(metaclass=abc.ABCMeta):
+    """
+    Abstract class for creating different versions
+    of crawlers
+    """
     @abc.abstractmethod
     def scrape(self, url):
         pass
@@ -24,6 +28,15 @@ class AbstractCrawler(metaclass=abc.ABCMeta):
         pass
 
     def process_link(self, link, prev_link):
+        """
+        Converts the link found on the page
+        so that it could be accessed on next
+        iterations
+        :param link: str
+        :param prev_link: str, previously
+        visited link from which we got to the current one
+        :return: str
+        """
         if link[:2] == "//":
             return "http:" + link
 
@@ -38,9 +51,18 @@ class AbstractCrawler(metaclass=abc.ABCMeta):
 
 class BSCrawler(AbstractCrawler):
     def __init__(self):
+        """
+        Creates a crawler with its own mutex
+        """
         self.mutex = threading.Lock()
 
     def scrape(self, url):
+        """
+        Returns a parser for the given page
+        or None if can't access it
+        :param url: str
+        :return: BeautifulSoup
+        """
         try:
             return BeautifulSoup(requests.get(url).text, 'html.parser')
         except requests.exceptions.RequestException as e:
@@ -49,9 +71,20 @@ class BSCrawler(AbstractCrawler):
             return None
 
     def get_text(self, parser):
+        """
+        Gets all text from the given BeautifulSoup object
+        :param parser: BeautifulSoup
+        :return: str
+        """
         return parser.get_text()
 
     def get_links(self, parser, prev_link):
+        """
+        Gets list of all links from the given BeautifulSoup object
+        :param parser: BeautifulSoup
+        :param prev_link: str
+        :return: list
+        """
         links = []
         for element in parser.find_all("a"):
             link = element.get("href")
@@ -62,12 +95,22 @@ class BSCrawler(AbstractCrawler):
         return links
 
     def get_structured_data(self, parser):
+        """
+        Gets dictionary representing website structured data
+        from the given BeautifulSoup object
+        :param parser: BeautifulSoup
+        :return: dict
+        """
         elem = parser.find("script", {"type": "application/ld+json"})
         if elem is not None:
             return json.loads(elem.contents[0])
 
     def crawl(self, link, add_links=True):
-
+        """
+        Gets text, structured data, links of the given page
+        :param link: str
+        :param add_links: bool (Decides whether links need to be returned)
+        """
         parser = self.scrape(link)
         if parser is None:
             return
@@ -83,18 +126,46 @@ class BSCrawler(AbstractCrawler):
 
 
 class CrawlersManager:
+    """
+    Class that contains many crawlers that
+    can be launched on multiple threads
+    """
+
+    # code that shows us that the crawler finished its work
     FINISH_CODE = -1
 
     def __init__(self, crawlers, max_depth, table):
+        """
+        Initializes CrawleManager with given list of crawles,
+        maximal depth of going into links and database table
+        :param crawlers: list
+        :param max_depth: int
+        :param table: DataBaseTable
+        :return:
+        """
         self.crawlers = crawlers
         self.table = table
         self.max_depth = max_depth
         self.websites = []
 
     def add_websites(self, links, depth=1):
+        """
+        Adds websites with given depth to the queue of
+        websites
+        :param links:
+        :param int:
+        :return:
+        """
         self.websites.extend([(link, depth) for link in links])
 
     def crawl_next(self, i):
+        """
+        Crawls next website from the queue using
+        crawler with index i
+        :param i: int
+        :return: None if everything is ok and FinishCode in
+        other cases
+        """
         self.crawlers[i].mutex.acquire()
         if len(self.websites) > 0:
             link, depth = self.websites.pop(0)
@@ -105,7 +176,9 @@ class CrawlersManager:
         # already processed or bad url
         if link is None:
             return
+        self.crawlers[i].mutex.acquire()
         rows = self.table.get_row_by_url(link)
+        self.crawlers[i].mutex.release()
         date_added = None
 
         # if link is already in database
@@ -125,8 +198,9 @@ class CrawlersManager:
         except (KeyError, TypeError):
             return
 
-
+        # checks if the data is new
         if (date_added is None or new_modification_stamp > date_added):
+            self.crawlers[i].mutex.acquire()
             self.table.insert_row(
                 [
                     link, date.today().strftime("%Y-%d-%m"),
@@ -137,5 +211,4 @@ class CrawlersManager:
 
             self.add_websites(data[1],
                               depth=depth + 1)
-
-
+            self.crawlers[i].mutex.release()

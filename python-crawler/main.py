@@ -6,6 +6,12 @@ import sys
 
 
 def crawl_thread(i, manager):
+    """
+    Completely crawles all websites in the manager queue
+    until there are no left using crawler at index i
+    :param i: int
+    :param manager: CrawlerManager
+    """
     prev_error = False
     while True:
         res = manager.crawl_next(i)
@@ -21,6 +27,15 @@ def crawl_thread(i, manager):
 
 
 def crawl_all(depth, threads_num, in_file):
+    """
+    Completely crawles all websites from the file
+    with given number of threads and saves data
+    into database
+    :param depth: int
+    :param threads_num: int
+    :param in_file: str
+    :return:
+    """
     crawlers = [BSCrawler() for i in range(threads_num)]
     manager = CrawlersManager(crawlers, depth, DataBaseTable(
             "database", "admin",
@@ -50,4 +65,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
