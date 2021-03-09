@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:latest
 
 WORKDIR /usr/src/app
 
@@ -6,9 +6,7 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
-
-CMD ["python", "./main.py", "2", "4", "websites.txt", "data.txt"]
+CMD ["python", "./main.py", "3", "4", "websites.txt"]
 
 
 

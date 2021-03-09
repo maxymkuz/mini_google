@@ -1,5 +1,5 @@
 from crawlers.crawlers import BSCrawler, CrawlersManager
-import json
+from database.db_manipulator import DataBaseTable
 import time
 import threading
 import sys
@@ -16,13 +16,17 @@ def crawl_thread(i, manager):
             else:
                 return
         else:
-            print("Crawled", i)
             prev_error = False
+        print(i)
 
 
-def crawl_all(depth, threads_num, in_file, output):
+def crawl_all(depth, threads_num, in_file):
     crawlers = [BSCrawler() for i in range(threads_num)]
-    manager = CrawlersManager(crawlers, depth)
+    manager = CrawlersManager(crawlers, depth, DataBaseTable(
+            "database", "admin",
+            "postgres", "db", 5432, "websites_en"
+            ))
+    print(1)
     with open(in_file) as f:
         manager.add_websites([line.strip() for line in f.readlines()])
 
@@ -35,9 +39,6 @@ def crawl_all(depth, threads_num, in_file, output):
     for i in range(threads_num):
         threads[i].join()
 
-    with open(output, 'w') as outfile:
-        json.dump(manager.data, outfile, indent=4)
-
 
 def main():
     args = sys.argv
@@ -49,3 +50,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

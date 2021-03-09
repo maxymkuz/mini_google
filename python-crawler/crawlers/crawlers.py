@@ -2,6 +2,8 @@ import abc
 from bs4 import BeautifulSoup
 import requests
 import threading
+import json
+from datetime import date
 
 
 class AbstractCrawler(metaclass=abc.ABCMeta):
@@ -29,7 +31,7 @@ class AbstractCrawler(metaclass=abc.ABCMeta):
             return prev_link + link
 
         if link[0] == "#":
-            return prev_link
+            return None
 
         return link
 
@@ -53,7 +55,7 @@ class BSCrawler(AbstractCrawler):
         links = []
         for element in parser.find_all("a"):
             link = element.get("href")
-            if link is None or len(link) < 2:
+            if link is None:
                 continue
             links.append(self.process_link(link, prev_link))
 
@@ -62,7 +64,7 @@ class BSCrawler(AbstractCrawler):
     def get_structured_data(self, parser):
         elem = parser.find("script", {"type": "application/ld+json"})
         if elem is not None:
-            return elem.contents
+            return json.loads(elem.contents[0])
 
     def crawl(self, link, add_links=True):
 
@@ -83,9 +85,9 @@ class BSCrawler(AbstractCrawler):
 class CrawlersManager:
     FINISH_CODE = -1
 
-    def __init__(self, crawlers, max_depth):
+    def __init__(self, crawlers, max_depth, table):
         self.crawlers = crawlers
-        self.data = {}
+        self.table = table
         self.max_depth = max_depth
         self.websites = []
 
@@ -93,22 +95,47 @@ class CrawlersManager:
         self.websites.extend([(link, depth) for link in links])
 
     def crawl_next(self, i):
-        link = None
         self.crawlers[i].mutex.acquire()
         if len(self.websites) > 0:
             link, depth = self.websites.pop(0)
-
-        self.crawlers[i].mutex.release()
-        if link is None:
+        else:
             return CrawlersManager.FINISH_CODE
+        self.crawlers[i].mutex.release()
 
-        if link in self.data:
+        # already processed or bad url
+        if link is None:
             return
+        rows = self.table.get_row_by_url(link)
+        date_added = None
+
+        # if link is already in database
+        if rows:
+            date_added = rows[0][2]
+            if date_added == date.today():
+                return
+
+        data = self.crawlers[i].crawl(link, depth < self.max_depth)
+        if data is None:
+            return CrawlersManager.FINISH_CODE
 
         try:
-            self.data[link], new_links = self.crawlers[i].crawl(link, depth < self.max_depth)
-        except TypeError:
-            return CrawlersManager.FINISH_CODE
+            new_modification_date = data[0]["structured_data"]["dateModified"]
+            new_modification_date = new_modification_date[:10]
+            new_modification_stamp = date.fromisoformat(new_modification_date)
+        except (KeyError, TypeError):
+            return
 
-        self.add_websites(new_links,
-                          depth=depth+1)
+
+        if (date_added is None or new_modification_stamp > date_added):
+            self.table.insert_row(
+                [
+                    link, date.today().strftime("%Y-%d-%m"),
+                    data[0]["text"],
+                    new_modification_date
+                ]
+            )
+
+            self.add_websites(data[1],
+                              depth=depth + 1)
+
+
