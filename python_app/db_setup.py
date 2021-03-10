@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2 import Error
 
-# Simple python script to initialize the table if not exist, need to rewrite later
+# Simple python script to initialize the table if not exist, need to rewrite later to add new functionality.
 
 
 def setup_table(table_name, cursor):
