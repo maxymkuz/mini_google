@@ -5,7 +5,7 @@
 
 use error_chain::error_chain;
 use futures::stream::{self, StreamExt};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::sync::mpsc::RecvError;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -32,13 +32,13 @@ error_chain! {
 pub struct ThreadPool {
     workers: Vec<Worker>,
     pub url_sender: mpsc::Sender<Vec<String>>,
-    pub new_data_receiver: mpsc::Receiver<(String, String, HashSet<String>, String)>,
+    pub new_data_receiver: mpsc::Receiver<(String, String, BTreeSet<String>, String)>,
 }
 
 impl ThreadPool {
     /// Create a new `ThreadPool` given the `size` - number of threads to spawn,
     /// HTTP `user_agent` name for crawling identification and the `high_level_domain` to crawl.
-    pub fn new(size: usize, user_agent: String, high_level_domain: String) -> ThreadPool {
+    pub fn new(size: u64, user_agent: String, high_level_domain: String) -> ThreadPool {
         assert!(size > 0);
 
         let (url_sender, url_receiver) = mpsc::channel();
@@ -71,7 +71,7 @@ impl ThreadPool {
 #[derive(Clone)]
 struct PageData {
     url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
-    new_data_sender: mpsc::Sender<(String, String, HashSet<String>, String)>,
+    new_data_sender: mpsc::Sender<(String, String, BTreeSet<String>, String)>,
     user_agent: String,
     high_level_domain: String,
 }
@@ -86,7 +86,7 @@ pub struct ScrapeData {
 /// A struct that `scrape` function returns after scrapping a webpage
 pub struct ScrapeRes {
     pub webpage: String,
-    pub all_links: HashSet<String>,
+    pub all_links: BTreeSet<String>,
     pub structured_data: String,
     pub full_text: String,
 }
@@ -95,14 +95,14 @@ pub struct ScrapeRes {
 /// own `JoinHandle` and `id`
 #[allow(dead_code)]
 struct Worker {
-    id: usize,
+    id: u64,
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
     /// Create a new `Worker` with the given `id` for debug identification and page_data of a
     /// webpage to scrape
-    fn new(id: usize, page_data: PageData) -> Worker {
+    fn new(id: u64, page_data: PageData) -> Worker {
         let thread = thread::spawn(move || {
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()

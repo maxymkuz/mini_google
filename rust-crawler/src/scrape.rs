@@ -5,7 +5,7 @@ use crate::{Result, ScrapeData, ScrapeRes};
 use reqwest::Url;
 use select::document::Document;
 use select::predicate::{Element, Name, Predicate};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 /// A scraper for a single webpage. Creates an HTTP client to connect to it,
 /// downloads the page, parses it and scrapes all links from it, returning them
@@ -55,7 +55,7 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
 /// Receives an HTML text file, parses it and returns only the text on it without
 /// the tags and attributes
 fn get_full_text(html: &Document) -> String {
-    let blacklist: HashSet<&'static str> =
+    let blacklist: BTreeSet<&'static str> =
         ["style", "html", "meta", "head", "script", "p", "a", "head"]
             .iter()
             .cloned()
@@ -81,11 +81,11 @@ fn get_links_from_html(
     html: &Document,
     base_url: &str,
     high_level_domain: &str,
-) -> HashSet<String> {
+) -> BTreeSet<String> {
     html.find(Name("a").or(Name("link")))
         .filter_map(|n| n.attr("href"))
         .filter_map(|x| normalize_url(x, base_url, high_level_domain))
-        .collect::<HashSet<String>>()
+        .collect::<BTreeSet<String>>()
 }
 
 /// Checks whether the URL was valid and whether it has a host and whether
