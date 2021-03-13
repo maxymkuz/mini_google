@@ -50,6 +50,9 @@ Each worker is just an asynchronous single-thread `tokio` runtime that tries to 
 of new URLs to crawl through the URL channel, and then asynchonously shoots off requests and gets
 data, which is then parsed and sent back to the main thread.
 
+If URLs error out, the main thread is going to repeat this URL a few times,
+waiting for exponentially more time between attempts, before discarding the URL altogether.
+
 ## Resources to quickly pick up what's going on here
 
 Some useful resources on Rust in general, as well as on concurrency and web:

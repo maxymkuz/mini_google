@@ -111,7 +111,9 @@ fn arg_parser() -> Arguments {
 /// (which should leave about 18 hours of work for us to work with)
 ///
 /// I am not really using VisitedFinal at the moment, since I am just removing the URL from the
-/// map as soon as it's done.
+/// map as soon as it's done. I also should get rid of ErrorFinal I think. Maybe just keep them for
+/// illustrative purposes or something? But I am just essentially wasting CPU time on updating them
+/// instead of just removing the URLs.
 ///
 /// So the possible paths in this state machine for every URL are:
 ///
@@ -135,7 +137,7 @@ enum UrlState {
     ///    sent to the queue once again once enough time passes for a new attempt
     ErrorAttempt(u8, u16),
     ///  * Errored - we went through several attempts, got nothing, so forget about this URL
-    ErrorFinal,
+    _ErrorFinal,
     ///  * Visited - everything is awesome
     _VisitedFinal,
 }
@@ -288,9 +290,6 @@ async fn main() -> Result<()> {
                                     webpages_to_send.push(webpage.0.clone());
                                 }
                                 // Otherwise, wait
-                            } else {
-                                // This page is hopeless, forget about it
-                                *webpage.1 = UrlState::ErrorFinal;
                             }
                         }
                         _ => continue,
@@ -352,8 +351,20 @@ async fn main() -> Result<()> {
                     // URL failed. Update its state, incrementing fail attempts number and updating the last attempt time
                     let now = Instant::now();
                     let last_attempt_time = (now - program_start_time).as_secs() as u16;
-                    let state = webpages.entry(url).or_insert(UrlState::ErrorAttempt(0, 0));
+                    let state = webpages
+                        .entry(url.clone())
+                        .or_insert(UrlState::ErrorAttempt(0, 0));
+
+                    // If the URL has already failed too many times, discard it completely.
+                    // If not, update its attempts number and time, give it one more chance
+                    // If its URLs' first error, start its error count
                     match state {
+                        UrlState::ErrorAttempt(num_attempts, _)
+                            if (*num_attempts + 1) >= args.repeat_limit =>
+                        {
+                            //*state = UrlState::ErrorFinal;
+                            webpages.remove(&url);
+                        }
                         UrlState::ErrorAttempt(num_attempts, _) => {
                             *state = UrlState::ErrorAttempt(*num_attempts + 1, last_attempt_time)
                         }

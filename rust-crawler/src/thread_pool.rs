@@ -154,13 +154,13 @@ impl Worker {
                                                     scrape_res.all_links,
                                                     scrape_res.full_text,
                                                 ))
-                                                .expect("The other end of the channel closed");
+                                                .ok();
                                         }
                                         Err(url) => {
                                             page_data
                                                 .new_data_sender
                                                 .send(WorkerResult::Failed(url))
-                                                .expect("The other end of the channel closed");
+                                                .ok();
                                         }
                                     };
                                     //println!("Worker {} finished URL {}", id, webpage_url);
