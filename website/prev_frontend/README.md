@@ -8,13 +8,13 @@ Basic UI (to be) implemented using Rust.
 
 * Flask (currently used locally for testing sending and processing data)
 
-### Usage (without Docker):
+### Frontend-Usage (without Docker):
 ```bash
 cd zola-webpage
 zola build
 zola serve
 ```
-### Usage (with Docker):
+### Frontend-Usage (with Docker):
 To build container:
 ```bash
 ./build.sh

@@ -1,7 +1,7 @@
 FROM alpine:3.13
 
 WORKDIR /usr/src
-COPY ./zola-webpage .
+COPY zola-webpage .
 EXPOSE 5000/tcp
 
 # Install zola and run the site
