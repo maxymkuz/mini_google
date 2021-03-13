@@ -27,7 +27,9 @@ error_chain! {
 /// If it has done everything, returns Done with all the parameters,
 /// if it has encountered errors, sends back the URL that errored
 pub enum WorkerResult {
+    /// The URL was parsed successfully, return all of the scrapped data
     Done(String, String, BTreeSet<String>, String),
+    /// Something went wrong during the processing
     Failed(String),
 }
 
@@ -85,14 +87,14 @@ struct PageData {
 }
 
 /// A struct that `scrape` function takes as a parameter, containing data given to it by the `Worker`
-pub struct ScrapeData {
+pub struct ScrapeParam {
     pub webpage_url: String,
     pub user_agent: String,
     pub high_level_domain: String,
 }
 
 /// A struct that `scrape` function returns after scrapping a webpage
-pub struct ScrapeRes {
+pub struct ScrapeData {
     pub webpage: String,
     pub all_links: BTreeSet<String>,
     pub structured_data: String,
@@ -131,18 +133,16 @@ impl Worker {
                         //println!("Worker {} got URLs {:?}", id, webpage_urls);
                         let webpage_urls = stream::iter(webpage_urls);
 
-                        // TODO: Kill myself
                         webpage_urls
                             .for_each_concurrent(None, |webpage_url| {
                                 let page_data = page_data.clone();
                                 let webpage_url = webpage_url.clone();
-                                let scrape_data = ScrapeData {
+                                let scrape_data = ScrapeParam {
                                     webpage_url,
                                     user_agent: page_data.user_agent.clone(),
                                     high_level_domain: page_data.high_level_domain.clone(),
                                 };
                                 async move {
-                                    //println!("Worker {} got URL {}", id, webpage_url);
                                     match scrape(scrape_data).await {
                                         Ok(scrape_res) => {
                                             // Send newly collected links and structured data
@@ -154,11 +154,14 @@ impl Worker {
                                                     scrape_res.all_links,
                                                     scrape_res.full_text,
                                                 ))
-                                                .ok();
-
-                                            // TODO: Add the whole scrapped text and possibly headers as a separate entity
+                                                .expect("The other end of the channel closed");
                                         }
-                                        Err(_) => (),
+                                        Err(url) => {
+                                            page_data
+                                                .new_data_sender
+                                                .send(WorkerResult::Failed(url))
+                                                .expect("The other end of the channel closed");
+                                        }
                                     };
                                     //println!("Worker {} finished URL {}", id, webpage_url);
                                 }

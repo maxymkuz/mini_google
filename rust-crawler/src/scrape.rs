@@ -1,7 +1,7 @@
 //! A scrapper module intended to work together with the `ThreadPool`'s workers.
 //!
 //! Scrapes the page for needed data and returns it back to the main thread.
-use crate::{Result, ScrapeData, ScrapeRes};
+use crate::{ScrapeData, ScrapeParam};
 use reqwest::Url;
 use select::document::Document;
 use select::predicate::{Element, Name, Predicate};
@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 /// A scraper for a single webpage. Creates an HTTP client to connect to it,
 /// downloads the page, parses it and scrapes all links from it, returning them
 /// in a valid format. Also scrapes structured data from the page.
-pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
+pub async fn scrape(scrape_data: ScrapeParam) -> std::result::Result<ScrapeData, String> {
     let (webpage_url, user_agent, high_level_domain) = (
         &scrape_data.webpage_url,
         &scrape_data.user_agent,
@@ -18,14 +18,24 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
     );
 
     // Creating an asynchronous `reqwest` Client to send HTTP requests with
-    let client = reqwest::Client::builder()
-        .user_agent(user_agent)
-        .build()
-        .unwrap();
+    let client = match reqwest::Client::builder().user_agent(user_agent).build() {
+        Ok(client) => client,
+        Err(_) => return Err(webpage_url.to_string()),
+    };
 
-    // Sending an asynchronous get request, unwrapping the `Result` we get
-    let res = client.get(webpage_url).send().await?.text().await?;
+    // Sending an asynchronous get request, forcing the `Result` we get up the tree to the worker
+    let res = match client.get(webpage_url).send().await {
+        Ok(res) => res,
+        Err(_) => return Err(webpage_url.to_string()),
+    };
 
+    let res = match res.text().await {
+        Ok(res) => res,
+        Err(_) => return Err(webpage_url.to_string()),
+    };
+
+    // Converting the HTML page we get into the parser's internal structure. This is actually
+    // where a better part of our compute power is spent
     let res = Document::from(&res[..]);
 
     // Scrapping all text from the page
@@ -36,6 +46,7 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
 
     // Searching for structured data on the page.
     // We are looking for <script type="application/ld+json"> and we need all of its contents
+    // TODO: probably move this out into a separate function and parse this into pure text
     let structured_data: String = res
         .find(Name("script"))
         .filter(|n| n.attr("type") == Some("application/ld+json"))
@@ -44,7 +55,7 @@ pub async fn scrape(scrape_data: ScrapeData) -> Result<ScrapeRes> {
         .unwrap_or("The page didn't have structured data".to_string());
     let webpage = webpage_url.to_string();
 
-    Ok(ScrapeRes {
+    Ok(ScrapeData {
         webpage,
         all_links,
         structured_data,
@@ -100,8 +111,9 @@ fn normalize_url(url: &str, base_url: &str, high_level_domain: &str) -> Option<S
         Err(_) => return None,
     };
 
-    // Delete the '#' fragment from the url string
+    // Delete the '#' fragment and '?' queries from the url string
     joined.set_fragment(None);
+    joined.set_query(None);
 
     if joined.has_host() && joined.host_str().unwrap() == high_level_domain {
         Some(joined.to_string())

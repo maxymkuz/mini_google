@@ -14,7 +14,7 @@ use tokio_postgres::NoTls;
 
 mod scrape;
 mod thread_pool;
-use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool, WorkerResult};
+use thread_pool::{Result, ScrapeData, ScrapeParam, ThreadPool, WorkerResult};
 
 // TODO: Write a couple of tests :)
 
@@ -109,18 +109,35 @@ fn arg_parser() -> Arguments {
 /// in the BTree. So instead of operating with nanosecs and global time or something,
 /// I am saving time in seconds that passed since the beginning of the program in u16
 /// (which should leave about 18 hours of work for us to work with)
+///
+/// I am not really using VisitedFinal at the moment, since I am just removing the URL from the
+/// map as soon as it's done.
+///
+/// So the possible paths in this state machine for every URL are:
+///
+///                 ErrorFinal
+///                      ^
+/// VisitedFinal         |
+///       ^          ErrorAttempt(x, y) <-
+///        \             ^          \    |
+///        Sent----------|           \---/
+///          ^
+///          |
+///       NotSent
+///
+#[derive(Debug)]
 enum UrlState {
     /// Not sent and not visited - should be picked up by the thread and sent to workers
     NotSent,
     ///  * Sent - so we are waiting on the response and are not sending it to anyone else
     Sent,
-    ///  * Tried to visit, but errorred (how_many_attempts: i8, time_of_the_last_attempt: smth) - to be
+    ///  * Tried to visit, but errorred (how_many_attempts: u8, time_of_the_last_attempt: u16) - to be
     ///    sent to the queue once again once enough time passes for a new attempt
     ErrorAttempt(u8, u16),
     ///  * Errored - we went through several attempts, got nothing, so forget about this URL
     ErrorFinal,
     ///  * Visited - everything is awesome
-    VisitedFinal,
+    _VisitedFinal,
 }
 
 /// The main thread function that parses command line arguments, reads webpage links from
@@ -138,7 +155,6 @@ async fn main() -> Result<()> {
     let args = arg_parser();
 
     // Create vectors to save webpages we have to crawl and structured data on them
-    //
     //
     //  This would make everything a lot more flexable and we wouldn't have to clone stuff around
     //  that much, I think. I should also probably figure stuff out with these lifetimes, so that
@@ -175,8 +191,10 @@ async fn main() -> Result<()> {
         .unwrap()
         .to_string();
 
-    // Establishing the database connection pool
     // TODO: Switch to using SOLR or ElasticSearch or whatever we decide upon
+    // currently all of this is commented since I'd have to rework it anyway
+    //
+    // Establishing the database connection pool
     //let (client, connection) = tokio_postgres::connect(
     //"dbname=main_fts user=postgres password=postgres host=localhost port=5432",
     //NoTls,
@@ -222,11 +240,14 @@ async fn main() -> Result<()> {
 
     // In order not to overwhelm the channel we have to send just enough urls through
     let mut needed_sends: u64 = args.threads_num + 10;
-    let urls_per_send = 100;
+    let urls_per_send = 50;
     let program_start_time = Instant::now();
+
+    // Calculating the time we should wait between attempts, with the formula being:
+    // time_to_wait = START_WAIT_TIME + EXPONENT**(number_of_attempts)
     const START_WAIT_TIME: u16 = 2;
     const EXPONENT: u16 = 5;
-    let attempt_time: Vec<u16> = (0u32..args.repeat_limit as u32)
+    let attempt_time_wait: Vec<u16> = (0u32..args.repeat_limit as u32)
         .map(|i| START_WAIT_TIME + EXPONENT.pow(i))
         .collect();
 
@@ -246,11 +267,11 @@ async fn main() -> Result<()> {
 
             while webpages_to_send.len() < urls_per_send {
                 // TODO: As above, maybe switch to using BTreeMap.pop_first() once it's stable?
+                // TODO: Check up with the database whether the URL has been checked. Or just not care
+
+                // As long as there are pages in the list, send them along and update their state
                 if let Some(webpage) = webpage_iter.next() {
-                    // TODO: Instead check whether the database contains this url and whether we should update it
                     match webpage.1 {
-                        // TODO: Set the state to Sent once it's actually sent. might need some
-                        // interior mutability for the enum though, dk
                         UrlState::NotSent => {
                             webpages_to_send.push(webpage.0.clone());
                             *webpage.1 = UrlState::Sent;
@@ -261,7 +282,7 @@ async fn main() -> Result<()> {
                                 // Check whether enough time passed between now and last_time,
                                 // depending on the number of attempts so far
                                 if (now - program_start_time).as_secs() as u16
-                                    > *last_time + attempt_time[*attempts as usize]
+                                    > *last_time + attempt_time_wait[(*attempts as usize) - 1]
                                 {
                                     // Try to crawl it once again
                                     webpages_to_send.push(webpage.0.clone());
@@ -274,6 +295,8 @@ async fn main() -> Result<()> {
                         }
                         _ => continue,
                     }
+                } else {
+                    break;
                 }
             }
             pool.url_sender.send(webpages_to_send).unwrap();
@@ -285,8 +308,9 @@ async fn main() -> Result<()> {
         if let Ok(worker_result) = pool.new_data_receiver.try_recv() {
             match worker_result {
                 WorkerResult::Done(url, sd, new_urls, full_text) => {
-                    //println!("Received {} new URLs", new_urls.len());
                     // Writing collected structured data to the file
+                    // Should probaly switch to this: https://docs.rs/async-std/1.9.0/async_std/fs/struct.File.html#impl-Write
+                    // But this is more of a debug thing so who cares
                     write!(output, "{}: \n{:?}\n{:?}", url, sd, full_text)?;
 
                     //structured_data.insert(url.clone(), sd);
@@ -298,16 +322,14 @@ async fn main() -> Result<()> {
                     });
 
                     // Switching the state of the url to visited!
-                    let state = webpages.entry(url).or_insert(UrlState::Sent);
-                    match state {
-                        UrlState::Sent | UrlState::ErrorAttempt(_, _) => {
-                            *state = UrlState::VisitedFinal
-                        }
-                        _ => (),
-                    }
-
-                    // Updating the progress bar
-                    prog_bar.set_position(visited_webpages);
+                    webpages.remove(&url);
+                    //let state = webpages.entry(url).or_insert(UrlState::Sent);
+                    //match state {
+                    //UrlState::Sent | UrlState::ErrorAttempt(_, _) => {
+                    //*state = UrlState::VisitedFinal
+                    //}
+                    //_ => (),
+                    //}
 
                     // Send the collected data into SQL database
                     //let now: NaiveDate = Utc::now().date().naive_utc();
@@ -321,12 +343,13 @@ async fn main() -> Result<()> {
                     //.await?;
 
                     // We've just received scrapped data, we need to send a new set of URLs back
+                    // Updating the progress bar
                     needed_sends += 1;
                     visited_webpages += 1;
+                    prog_bar.set_position(visited_webpages);
                 }
                 WorkerResult::Failed(url) => {
-                    // URL failed. Update its state, incrementing fail attempts number and updating
-                    // the last attempt time
+                    // URL failed. Update its state, incrementing fail attempts number and updating the last attempt time
                     let now = Instant::now();
                     let last_attempt_time = (now - program_start_time).as_secs() as u16;
                     let state = webpages.entry(url).or_insert(UrlState::ErrorAttempt(0, 0));
