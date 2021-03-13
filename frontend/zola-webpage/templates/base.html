@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <title>{% block title %}Mini Google{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+
+<body>
+<header>
+    <div class="section">
+        <h1 class="title">Mini Google</h1>
+        <h2 class="subtitle">Experimental Search Engine</h2>
+    </div>
+</header>
+
+<section class="section">
+    <div class="columns">
+        <div class="column is-one-quarter">
+            <h2 class="subtitle">Library</h2>
+            <ul>
+                <li><a href="">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-eye">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Search History
+                        </div>
+                    </div>
+                </a></li>
+                <li><a href="">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-bookmark">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Bookmarks
+                        </div>
+                    </div>
+                </a></li>
+            </ul>
+        </div>
+        <div class="column">
+            <div class="container">
+                {% block content %} {% endblock %}
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>
+            Project for Architecture of Computer Systems Course. <a href="https://github.com/maxymkuz/mini_google"><i class="fa fa-github-alt"></i></a>
+        </p>
+    </div>
+</footer>
+</html>
+
+

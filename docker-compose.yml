@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  db:
+    build: ./database/
+    ports:
+      - 5405:5432
+    restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  python_app:
+    build: ./python_app/
+    depends_on:
+      - db
+
+  #rust_app:
+    #build: ./rust-crawler/
+    #depends_on:
+      #- db
+    #command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
+
+  frontend:
+    build: ./frontend/
+    ports:
+      - 5000:5000
+

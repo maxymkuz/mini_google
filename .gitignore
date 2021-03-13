@@ -1,2 +1,9 @@
 target
 out.txt
+*.DS_Store
+*.venv/
+*.idea/
+postgres-data
+flamegraph.svg
+perf.data
+perf.data.old
