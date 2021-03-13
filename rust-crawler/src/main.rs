@@ -7,52 +7,59 @@ use chrono::{NaiveDate, Utc};
 use clap::{App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use std::{collections::BTreeMap, time::Instant};
 use tokio_postgres::NoTls;
 
 mod scrape;
 mod thread_pool;
-use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool};
+use thread_pool::{Result, ScrapeData, ScrapeRes, ThreadPool, WorkerResult};
 
-// TODO: Write a couple of tests
+// TODO: Write a couple of tests :)
+
+struct Arguments {
+    input_file: String,
+    output_file: String,
+    user_agent: String,
+    threads_num: u64,
+    webpage_limit: u64,
+    repeat_limit: u8,
+}
 
 /// Parses command line arguments, returns a tuple with them
-fn arg_parser() -> (String, String, String, u64, u64) {
+fn arg_parser() -> Arguments {
     // Matching our command-line arguments
     // Clap also creates a nice help page for our program
     let matches = App::new("Rust Structured Data Crawler")
         .version("0.1.0")
         .about("Crawls all links from a given website inside of its high-level domain,  collecting structured data into a file")
-        .arg(
-            Arg::with_name("input_file")
+        .arg(Arg::with_name("input_file")
                 .short("if")
                 .long("inp_file")
                 .takes_value(true)
-                .help("Input file with website URLs"),
-        )
-        .arg(
-            Arg::with_name("output_file")
+                .help("Input file with website URLs"))
+        .arg(Arg::with_name("output_file")
                 .short("of")
                 .long("out_file")
                 .takes_value(true)
-                .help("Output file for collected structured data"),
-        )
-        .arg(
-            Arg::with_name("threads_num")
+                .help("Output file for collected structured data"))
+        .arg(Arg::with_name("threads_num")
                 .short("t")
                 .long("threads")
                 .takes_value(true)
-                .help("Number of threads (workers) in the thread pool"),
-        )
-        .arg(
-            Arg::with_name("page_limit")
+                .help("Number of threads (workers) in the thread pool"))
+        .arg(Arg::with_name("page_limit")
                 .short("l")
                 .long("limit")
                 .takes_value(true)
-                .help("Number of pages to crawl until stopping"),
-        ).get_matches();
+                .help("Number of pages to crawl until stopping (Default is 1024)"))
+        .arg(Arg::with_name("repeat_limit")
+                .short("r")
+                .long("replimit")
+                .takes_value(true)
+                .help("Number of times to retry crawling a page if it errors out (Default is 3)"))
+        .get_matches();
 
     let input_file = matches
         .value_of("input_file")
@@ -76,26 +83,43 @@ fn arg_parser() -> (String, String, String, u64, u64) {
         .parse()
         .expect("Provide a valid webpage limit!");
 
+    let repeat_limit: u8 = matches
+        .value_of("replimit")
+        .unwrap_or("3")
+        .parse()
+        .expect("Provide a valid repeat limit!");
+
     // This is used to signal webpages that we are the same client sending requests to them
     let user_agent: String = "rust-crawler-mini-google-ucu".to_string();
 
     // Returns the parsed arguments
-    (
+    Arguments {
         input_file,
         output_file,
         user_agent,
         threads_num,
         webpage_limit,
-    )
+        repeat_limit,
+    }
 }
 
 /// Enum representing the state the URL is in.
+///
+/// I'm trying to be smart and keep its size to a minimum since every URL has one of these
+/// in the BTree. So instead of operating with nanosecs and global time or something,
+/// I am saving time in seconds that passed since the beginning of the program in u16
+/// (which should leave about 18 hours of work for us to work with)
 enum UrlState {
     /// Not sent and not visited - should be picked up by the thread and sent to workers
     NotSent,
+    ///  * Sent - so we are waiting on the response and are not sending it to anyone else
     Sent,
-    ErrorAttempt(i8, i8),
+    ///  * Tried to visit, but errorred (how_many_attempts: i8, time_of_the_last_attempt: smth) - to be
+    ///    sent to the queue once again once enough time passes for a new attempt
+    ErrorAttempt(u8, u16),
+    ///  * Errored - we went through several attempts, got nothing, so forget about this URL
     ErrorFinal,
+    ///  * Visited - everything is awesome
     VisitedFinal,
 }
 
@@ -111,19 +135,10 @@ enum UrlState {
 #[tokio::main]
 async fn main() -> Result<()> {
     // Parsing the command line arguments
-    let (input_file, output_file, user_agent, threads_num, webpage_limit) = arg_parser();
+    let args = arg_parser();
 
     // Create vectors to save webpages we have to crawl and structured data on them
     //
-    // Alright, gonna try to implement a smarter data structure here.
-    // What we need is a BTreeMap, probably, holding both the url itself,
-    // and the state of that url it's currently in, something like an enum state machine:
-    //  * Unsent and unvisited - should be picked up by the thread and sent to workers
-    //  * Sent - so we are waiting on the response and are not sending it to anyone else
-    //  * Visited - everything is awesome
-    //  * Tried to visit, but errorred (how_many_attempts: i8, time_of_the_last_attempt: smth) - to be
-    //    sent to the queue once again once enough time passes for a new attempt
-    //  * Errored - we went through several attempts, got nothing, so forget about this URL
     //
     //  This would make everything a lot more flexable and we wouldn't have to clone stuff around
     //  that much, I think. I should also probably figure stuff out with these lifetimes, so that
@@ -138,7 +153,7 @@ async fn main() -> Result<()> {
     let mut visited_webpages: u64 = 0;
 
     // Reading the input file with URLs
-    let input = File::open(input_file)?;
+    let input = File::open(args.input_file)?;
     let buffered = BufReader::new(input);
     for line in buffered.lines() {
         webpages.insert(
@@ -190,14 +205,14 @@ async fn main() -> Result<()> {
     //.await?;
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
-    let pool = ThreadPool::new(threads_num, user_agent, high_level_domain);
+    let pool = ThreadPool::new(args.threads_num, args.user_agent, high_level_domain);
 
     // Opening an output file
-    let mut output = File::create(output_file)?;
+    let mut output = File::create(args.output_file)?;
 
     // A nice TUI debug interface with the current progress
     // TODO: Add a nice way to see what each thread is doing right now
-    let prog_bar = ProgressBar::new(webpage_limit as u64);
+    let prog_bar = ProgressBar::new(args.webpage_limit as u64);
     prog_bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed}] {bar:40.cyan/blue} {pos:>5}/{len:5} {msg}")
@@ -206,18 +221,28 @@ async fn main() -> Result<()> {
     prog_bar.set_message("Collecting data from webpages...");
 
     // In order not to overwhelm the channel we have to send just enough urls through
-    let mut needed_sends: u64 = threads_num + 10;
+    let mut needed_sends: u64 = args.threads_num + 10;
     let urls_per_send = 100;
+    let program_start_time = Instant::now();
+    const START_WAIT_TIME: u16 = 2;
+    const EXPONENT: u16 = 5;
+    let attempt_time: Vec<u16> = (0u32..args.repeat_limit as u32)
+        .map(|i| START_WAIT_TIME + EXPONENT.pow(i))
+        .collect();
 
     // Crawling through all webpages until we have enough unique pages crawled
-    while visited_webpages < webpage_limit {
+    while visited_webpages < args.webpage_limit {
         // If we have webpages to send and the channel is not overwhelmed, we need to send new
         // sets of URLs, which are then processed in the workers asynchronously
         if webpages.len() > urls_per_send && needed_sends > 0 {
             // Creating the container to send URLs through the channel in and an iterator through
             // our webpages list
             let mut webpages_to_send: Vec<String> = vec![];
-            let mut webpage_iter = webpages.iter();
+            let mut webpage_iter = webpages.iter_mut();
+
+            // Look at what time it is right now to check whether we need
+            // to repeat a crawl on some pages
+            let now = Instant::now();
 
             while webpages_to_send.len() < urls_per_send {
                 // TODO: As above, maybe switch to using BTreeMap.pop_first() once it's stable?
@@ -226,12 +251,26 @@ async fn main() -> Result<()> {
                     match webpage.1 {
                         // TODO: Set the state to Sent once it's actually sent. might need some
                         // interior mutability for the enum though, dk
-                        UrlState::NotSent => webpages_to_send.push(webpage.0.clone()),
+                        UrlState::NotSent => {
+                            webpages_to_send.push(webpage.0.clone());
+                            *webpage.1 = UrlState::Sent;
+                        }
                         UrlState::ErrorAttempt(attempts, last_time) => {
-
-                            // TODO: Check whether enough time passed between now and last_time,
-                            // depending on the number of attempts so far for us to send it once
-                            // again and try to crawl
+                            // We still have to attempt to crawl the page
+                            if *attempts < args.repeat_limit {
+                                // Check whether enough time passed between now and last_time,
+                                // depending on the number of attempts so far
+                                if (now - program_start_time).as_secs() as u16
+                                    > *last_time + attempt_time[*attempts as usize]
+                                {
+                                    // Try to crawl it once again
+                                    webpages_to_send.push(webpage.0.clone());
+                                }
+                                // Otherwise, wait
+                            } else {
+                                // This page is hopeless, forget about it
+                                *webpage.1 = UrlState::ErrorFinal;
+                            }
                         }
                         _ => continue,
                     }
@@ -241,38 +280,66 @@ async fn main() -> Result<()> {
             needed_sends -= 1;
         }
 
-        // Try to receive structured data and newly collected links from our end of the channel
-        if let Ok((url, sd, new_urls, full_text)) = pool.new_data_receiver.try_recv() {
-            //println!("Received {} new URLs", new_urls.len());
-            // Writing collected structured data to the file
-            write!(output, "{}: \n{:?}\n{:?}", url, sd, full_text)?;
+        // If there is data in the channel, we destructure it and change the state of the URL
+        // accordingly, updating whether the scrape was successful or resulted in an error
+        if let Ok(worker_result) = pool.new_data_receiver.try_recv() {
+            match worker_result {
+                WorkerResult::Done(url, sd, new_urls, full_text) => {
+                    //println!("Received {} new URLs", new_urls.len());
+                    // Writing collected structured data to the file
+                    write!(output, "{}: \n{:?}\n{:?}", url, sd, full_text)?;
 
-            //structured_data.insert(url.clone(), sd);
-            //visited_webpages.insert(url.clone());
+                    //structured_data.insert(url.clone(), sd);
+                    //visited_webpages.insert(url.clone());
 
-            // Adding newly collected links to the webpage list
-            new_urls.into_iter().for_each(|url| {
-                webpages.entry(url.clone()).or_insert(UrlState::NotSent);
-            });
+                    // Adding newly collected links to the webpage list
+                    new_urls.into_iter().for_each(|url| {
+                        webpages.entry(url.clone()).or_insert(UrlState::NotSent);
+                    });
 
-            // Updating the progress bar
-            prog_bar.set_position(visited_webpages);
+                    // Switching the state of the url to visited!
+                    let state = webpages.entry(url).or_insert(UrlState::Sent);
+                    match state {
+                        UrlState::Sent | UrlState::ErrorAttempt(_, _) => {
+                            *state = UrlState::VisitedFinal
+                        }
+                        _ => (),
+                    }
 
-            // Send the collected data into SQL database
-            //let now: NaiveDate = Utc::now().date().naive_utc();
+                    // Updating the progress bar
+                    prog_bar.set_position(visited_webpages);
 
-            //client
-            //.query(
-            //"INSERT INTO websites_en (url, date_added, site_text, tokenized) \
-            //VALUES ($1, $2, $3, to_tsvector($4));",
-            //&[&url, &now, &full_text, &full_text],
-            //)
-            //.await?;
+                    // Send the collected data into SQL database
+                    //let now: NaiveDate = Utc::now().date().naive_utc();
 
-            // We've just received scrapped data, we need to send a new set of URLs back
-            needed_sends += 1;
-            visited_webpages += 1;
-        };
+                    //client
+                    //.query(
+                    //"INSERT INTO websites_en (url, date_added, site_text, tokenized) \
+                    //VALUES ($1, $2, $3, to_tsvector($4));",
+                    //&[&url, &now, &full_text, &full_text],
+                    //)
+                    //.await?;
+
+                    // We've just received scrapped data, we need to send a new set of URLs back
+                    needed_sends += 1;
+                    visited_webpages += 1;
+                }
+                WorkerResult::Failed(url) => {
+                    // URL failed. Update its state, incrementing fail attempts number and updating
+                    // the last attempt time
+                    let now = Instant::now();
+                    let last_attempt_time = (now - program_start_time).as_secs() as u16;
+                    let state = webpages.entry(url).or_insert(UrlState::ErrorAttempt(0, 0));
+                    match state {
+                        UrlState::ErrorAttempt(num_attempts, _) => {
+                            *state = UrlState::ErrorAttempt(*num_attempts + 1, last_attempt_time)
+                        }
+                        UrlState::Sent => *state = UrlState::ErrorAttempt(1, last_attempt_time),
+                        _ => (),
+                    }
+                }
+            }
+        }
     }
 
     prog_bar.finish_with_message("Finished collecting data");

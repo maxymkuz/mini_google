@@ -9,8 +9,9 @@ Just run it and it will print out structured data found on the page:
 ```bash
 # A quick test build of the rust executable
 # The CLI executable displays its progress
-# Choose a maximum number of webpages to crawl (default is 1024)
-cargo run --release -- -i file.txt -o out.txt -t 8 -l 300
+# 'l' chooses a maximum number of webpages to crawl (default is 1024)
+# 'r' chooses a maximum number of repeats for failed pages (default is 3)
+cargo run --release -- -i file.txt -o out.txt -t 8 -l 300 -r 5
 
 # A help page with CLI parameters' descriptions
 cargo run -- --help

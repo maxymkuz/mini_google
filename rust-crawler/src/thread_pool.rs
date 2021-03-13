@@ -23,6 +23,14 @@ error_chain! {
       }
 }
 
+/// A result of the worker's scrape attempt.
+/// If it has done everything, returns Done with all the parameters,
+/// if it has encountered errors, sends back the URL that errored
+pub enum WorkerResult {
+    Done(String, String, BTreeSet<String>, String),
+    Failed(String),
+}
+
 /// `ThreadPool` spawns and holds threads that crawl and scrape webpages.
 ///
 /// Acquires webpages through the `url_sender` channel and gives back newly acquired URLs through
@@ -32,7 +40,7 @@ error_chain! {
 pub struct ThreadPool {
     workers: Vec<Worker>,
     pub url_sender: mpsc::Sender<Vec<String>>,
-    pub new_data_receiver: mpsc::Receiver<(String, String, BTreeSet<String>, String)>,
+    pub new_data_receiver: mpsc::Receiver<WorkerResult>,
 }
 
 impl ThreadPool {
@@ -71,7 +79,7 @@ impl ThreadPool {
 #[derive(Clone)]
 struct PageData {
     url_receiver: Arc<Mutex<mpsc::Receiver<Vec<String>>>>,
-    new_data_sender: mpsc::Sender<(String, String, BTreeSet<String>, String)>,
+    new_data_sender: mpsc::Sender<WorkerResult>,
     user_agent: String,
     high_level_domain: String,
 }
@@ -140,7 +148,7 @@ impl Worker {
                                             // Send newly collected links and structured data
                                             page_data
                                                 .new_data_sender
-                                                .send((
+                                                .send(WorkerResult::Done(
                                                     scrape_res.webpage,
                                                     scrape_res.structured_data,
                                                     scrape_res.all_links,
