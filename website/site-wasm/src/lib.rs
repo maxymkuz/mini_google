@@ -146,6 +146,13 @@ impl Component for Model {
                     </div>
                 </div>
             </section>
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>{"Project for Architecture of Computer Systems Course."}</p>
+                    <a href="https://github.com/maxymkuz/mini_google"><i
+                            class="fa fa-github-alt"></i></a>
+                </div>
+            </footer>
             </body>
         }
     }
