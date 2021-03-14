@@ -3,6 +3,7 @@ Course project for the Architecture of Computer Systems course.
 
 ## Overview:
 ![](images/structure.png)
+
 We are working on multiple components of the web crawler at the same time:
 
 * [Website](./website)
