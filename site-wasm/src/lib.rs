@@ -11,7 +11,10 @@ struct Model {
     link: ComponentLink<Self>,
 }
 
+enum Msg {}
+
 impl Component for Model {
+    type Message = ();
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
@@ -19,7 +22,9 @@ impl Component for Model {
         }
     }
 
-    fn update(&mut self) -> ShouldRender {}
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        true
+    }
 
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
         // Should only return "true" if new properties are different to
