@@ -1,32 +1,25 @@
-#![recursion_limit="1024"]
+#![recursion_limit = "1024"]
+
+use std::net::{TcpStream};
+use std::io::{Read, Write};
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
+use std::str::from_utf8;
+
 
 struct Model {
     link: ComponentLink<Self>,
-    value: i64,
-}
-
-enum Msg {
-    AddOne,
 }
 
 impl Component for Model {
-    type Message = Msg;
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
             link,
-            value: 0,
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        match msg {
-            Msg::AddOne => self.value += 1
-        }
-        true
-    }
+    fn update(&mut self) -> ShouldRender {}
 
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
         // Should only return "true" if new properties are different to
@@ -84,7 +77,7 @@ impl Component for Model {
                         </span>
                                     </div>
                                     <div class="column">
-                                        <form action="http://localhost:5001" method="post">
+                                        <form action="http://0.0.0.0:3333" method="get">
                                             <div class="field has-addons">
                                                 <p class="control is-expanded">
                                                     <input class="input is-link" type="text"
