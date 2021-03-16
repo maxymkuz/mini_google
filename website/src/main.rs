@@ -16,33 +16,26 @@ use rocket::http::RawStr;
 // use rocket::http::{Cookie, CookieJar};
 // use async_trait::async_trait;
 
-struct ApiKey(String);
+struct UserSearch(String);
 
-/// Returns true if `key` is a valid API key string.
-fn is_valid(key: &str) -> bool {
-    key == "valid_api_key"
-}
-
+// /// Returns true if `key` is a valid API key string.
+// fn is_valid(key: &str) -> bool {
+//     key == "valid_api_key"
+// }
+//
 #[derive(Debug)]
-enum ApiKeyError {
-    BadCount,
-    Missing,
-    Invalid,
+enum UserSearchError {
+    No,
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for ApiKey {
-    type Error = ApiKeyError;
+impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
+    type Error = UserSearchError;
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let keys: Vec<_> = request.headers().get("x-api-key").collect();
-        match keys.len() {
-            0 => Outcome::Failure((Status::BadRequest, ApiKeyError::Missing)),
-            1 if is_valid(keys[0]) => Outcome::Success(ApiKey(keys[0].to_string())),
-            1 => Outcome::Failure((Status::BadRequest, ApiKeyError::Invalid)),
-            _ => Outcome::Failure((Status::BadRequest, ApiKeyError::BadCount)),
-        }
+        Outcome::Success(UserSearch("yes".to_string()))
     }
 }
+
 // use serde::Serialize;
 
 // #[derive(FromForm, Debug)]
@@ -76,27 +69,35 @@ impl<'a, 'r> FromRequest<'a, 'r> for ApiKey {
 //     }
 // }
 
+// #[get("/home")]
+// fn home(name: String) -> Template {
+//     format!("Hello, {}!", name.as_str());
+//     let mut context = HashMap::new();
+//     context.insert("title", String::from("Jane"));
+//     // #[derive(Serialize)]
+//     // struct Context {
+//     //   first_name: String,
+//     //   last_name: String
+//     // }
+//     //
+//     // let context = Context {
+//     //   first_name: String::from("Jane"),
+//     //   last_name: String::from("Doe")
+//     // };
+//
+//     Template::render("home", &context)
+// }
+
 #[get("/")]
-fn index(name: ApiKey) -> Template {
-    // format!("Hello, {}!", name.as_str());
+fn index() -> Template {
     let mut context = HashMap::new();
     context.insert("title", String::from("Jane"));
-    // #[derive(Serialize)]
-    // struct Context {
-    //   first_name: String,
-    //   last_name: String
-    // }
-    //
-    // let context = Context {
-    //   first_name: String::from("Jane"),
-    //   last_name: String::from("Doe")
-    // };
 
     Template::render("home", &context)
 }
 
 #[get("/hello")]
-fn hello() -> Json<&'static str> {
+fn hello(name: UserSearch) -> Json<&'static str> {
     Json("{
     'status': 'success',
     'message': 'Hello API!'
