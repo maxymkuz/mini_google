@@ -3,15 +3,46 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::Request;
+// use rocket::Request;
+use rocket::Outcome;
+use rocket::http::Status;
+use rocket::request::{self, Request, FromRequest};
 use rocket::response::content::Json;
-use rocket::request::{self, FromRequest, Request};
 use rocket::request::Form;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::RawStr;
+// use rocket::request::FromParam;
+// use rocket::http::{Cookie, CookieJar};
 // use async_trait::async_trait;
 
+struct ApiKey(String);
+
+/// Returns true if `key` is a valid API key string.
+fn is_valid(key: &str) -> bool {
+    key == "valid_api_key"
+}
+
+#[derive(Debug)]
+enum ApiKeyError {
+    BadCount,
+    Missing,
+    Invalid,
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for ApiKey {
+    type Error = ApiKeyError;
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        let keys: Vec<_> = request.headers().get("x-api-key").collect();
+        match keys.len() {
+            0 => Outcome::Failure((Status::BadRequest, ApiKeyError::Missing)),
+            1 if is_valid(keys[0]) => Outcome::Success(ApiKey(keys[0].to_string())),
+            1 => Outcome::Failure((Status::BadRequest, ApiKeyError::Invalid)),
+            _ => Outcome::Failure((Status::BadRequest, ApiKeyError::BadCount)),
+        }
+    }
+}
 // use serde::Serialize;
 
 // #[derive(FromForm, Debug)]
@@ -28,27 +59,28 @@ use rocket::http::{Cookie, CookieJar};
 //     // description: String
 // }
 
-#[derive(Debug)]
-struct SearchRequest(String);
-
-// #[rocket::async_trait]
-impl<'a,'r> FromRequest<'a,'r> for SearchRequest {
-    type Error = std::convert::Infallible;
-
-    //TODO: async
-    fn from_request(request: &'r Request<'_>) -> request::Outcome<SearchRequest, Self::Error> {
-        request.cookies()
-            .get_private("user_search")
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(|id| SearchRequest(id))
-            .or_forward(())
-    }
-}
+// #[derive(Debug)]
+// struct SearchRequest(String);
+//
+// // #[rocket::async_trait]
+// impl<'a,'r> FromRequest<'a,'r> for SearchRequest {
+//     type Error = std::convert::Infallible;
+//
+//     //TODO: async
+//     fn from_request(request: &'r Request<'_>) -> request::Outcome<SearchRequest, Self::Error> {
+//         request.cookies()
+//             .get_private("user_search")
+//             .and_then(|cookie| cookie.value().parse().ok())
+//             .map(|id| SearchRequest(id))
+//             .or_forward(())
+//     }
+// }
 
 #[get("/")]
-fn index(search_request: SearchRequest) -> Template {
+fn index(name: ApiKey) -> Template {
+    // format!("Hello, {}!", name.as_str());
     let mut context = HashMap::new();
-    context.insert("title", search_request.0);
+    context.insert("title", String::from("Jane"));
     // #[derive(Serialize)]
     // struct Context {
     //   first_name: String,
@@ -74,6 +106,11 @@ fn hello() -> Json<&'static str> {
 #[catch(404)]
 fn not_found(_req: &Request) -> String {
     format!("Oh no! This is not a valid path ;=(")
+}
+
+#[catch(400)]
+fn bad_request(_req: &Request) -> String {
+    format!("Oh no! A bad request was caught ;=(")
 }
 
 // #[post("/book", data = "<book_form>")]
