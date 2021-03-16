@@ -16,6 +16,7 @@ use rocket::http::RawStr;
 // use rocket::http::{Cookie, CookieJar};
 // use async_trait::async_trait;
 
+#[derive(Debug)]
 struct UserSearch(String);
 
 // /// Returns true if `key` is a valid API key string.
@@ -30,7 +31,6 @@ enum UserSearchError {
 
 impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
     type Error = UserSearchError;
-
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
         Outcome::Success(UserSearch("yes".to_string()))
     }
@@ -97,11 +97,12 @@ fn index() -> Template {
 }
 
 #[get("/hello")]
-fn hello(name: UserSearch) -> Json<&'static str> {
-    Json("{
-    'status': 'success',
-    'message': 'Hello API!'
-  }")
+fn hello(name: UserSearch) -> String {
+    format!("Hello, {:?}!", name)
+  //   Json("{
+  //   'status': 'success',
+  //   'message': 'Hello API!'
+  // }")
 }
 
 #[catch(404)]
