@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_a2fd6db095837cc464751e4cfdfde42fe770d47f(Module, $0, $1, $2, $3) { $1 = Module.STDWEB_PRIVATE.to_js($1);$2 = Module.STDWEB_PRIVATE.to_js($2);$3 = Module.STDWEB_PRIVATE.to_js($3);Module.STDWEB_PRIVATE.from_js($0, (function(){return($1).slice(($2),($3));})()); }

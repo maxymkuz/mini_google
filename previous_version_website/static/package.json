@@ -1,0 +1,16 @@
+{
+  "name": "site-wasm",
+  "collaborators": [
+    "Daria Omelkina <odasha2001@gmail.com>"
+  ],
+  "description": "Mini Google web app",
+  "version": "0.1.0",
+  "files": [
+    "wasm_bg.wasm",
+    "wasm.js",
+    "wasm.d.ts"
+  ],
+  "module": "wasm.js",
+  "types": "wasm.d.ts",
+  "sideEffects": false
+}

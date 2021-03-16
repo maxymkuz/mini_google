@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_d336a994ee5e00d9082d31717b1c75af8ab4d080(Module, $0, $1) { $0 = Module.STDWEB_PRIVATE.to_js($0);$1 = Module.STDWEB_PRIVATE.to_js($1);console.assert(($0),($1)); }

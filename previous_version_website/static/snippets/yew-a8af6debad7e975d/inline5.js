@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_dccdf88f9906f4723937a3e8c2527b7a6a3f00e0(Module) { console.clear(); }

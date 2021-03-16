@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_d1808864dd38e6472823a075adda230022c35f2a(Module, $0, $1) { $1 = Module.STDWEB_PRIVATE.to_js($1);Module.STDWEB_PRIVATE.from_js($0, (function(){var the_task=($1);return the_task.active&&(! the_task.abortController||! the_task.abortController.signal.aborted);})()); }

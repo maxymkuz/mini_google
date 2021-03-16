@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_efa822141257b627ccc671c04f48351a53b40a38(Module, $0, $1) { $1 = Module.STDWEB_PRIVATE.to_js($1);Module.STDWEB_PRIVATE.from_js($0, (function(){var callback=($1);var action=function(time){callback(time);callback.drop();};return{render_id:requestAnimationFrame(action),callback:callback,};})()); }

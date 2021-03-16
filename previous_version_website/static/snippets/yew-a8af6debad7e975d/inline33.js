@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_7c914dd9d5e45d34277a4854d96608c3a66549bf(Module, $0, $1, $2) { $1 = Module.STDWEB_PRIVATE.to_js($1);$2 = Module.STDWEB_PRIVATE.to_js($2);Module.STDWEB_PRIVATE.from_js($0, (function(){var worker=new Worker(($1));var handler=($2);worker.onmessage=function(event){handler(event.data);};return worker;})()); }

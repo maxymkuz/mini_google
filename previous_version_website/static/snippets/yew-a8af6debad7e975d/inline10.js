@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_171e7f4158d3db7daa7277bebfede6ba8933d9d0(Module) { console.count(); }

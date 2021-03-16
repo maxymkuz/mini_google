@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_104d1631e8c20bf32295be271a8bac867a098e9a(Module) { console.groupCollapsed(); }

@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_56452b03a94d5c6fa698903617aa393b633fd822(Module) { console.time(); }

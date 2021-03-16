@@ -1,0 +1,1 @@
+export function __cargo_web_snippet_b31c91d77c05392140b81b76f8794b12258d92be(Module, $0, $1) { $1 = Module.STDWEB_PRIVATE.to_js($1);Module.STDWEB_PRIVATE.from_js($0, (function(){var handle=($1);window.addEventListener("resize",handle);return handle;})()); }
