@@ -131,7 +131,7 @@ class CrawlersManager:
     # code that shows us that the crawler finished its work
     FINISH_CODE = -1
 
-    def __init__(self, crawlers, max_depth):
+    def __init__(self, crawlers, max_depth, delay=1, coef=2):
         """
         Initializes CrawleManager with given list of crawles,
         maximal depth of going into links
@@ -143,6 +143,9 @@ class CrawlersManager:
         self.max_depth = max_depth
         self.websites = []
         self.mutex = threading.Lock()
+        self.bad_urls = []
+        self.delay = 1
+        self.coef = coef
 
     def add_websites(self, links, depth=1):
         """
@@ -184,7 +187,7 @@ class CrawlersManager:
 
         data = self.crawlers[i].crawl(link, depth < self.max_depth)
         if data is None:
-            return CrawlersManager.FINISH_CODE
+            self.bad_urls.append(link)
 
         try:
             new_modification_date = data[0]["structured_data"]["dateModified"]

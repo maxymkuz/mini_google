@@ -25,8 +25,18 @@ def crawl_thread(i, manager):
             prev_error = False
         print(i)
 
+def crawl_good_links(manager, threads_num):
+    threads = []
+    for i in range(threads_num):
+        threads.append(threading.Thread(target=crawl_thread,
+                                        args=(i, manager)))
+        threads[i].start()
 
-def crawl_all(depth, threads_num, in_file):
+    for i in range(threads_num):
+        threads[i].join()
+
+
+def crawl_all(depth, threads_num, in_file, max_iteration=4):
     """
     Completely crawles all websites from the file
     with given number of threads and saves data
@@ -45,15 +55,20 @@ def crawl_all(depth, threads_num, in_file):
     print(1)
     with open(in_file) as f:
         manager.add_websites([line.strip() for line in f.readlines()])
+    i = 0
+    while True:
+        crawl_good_links(manager, threads_num)
+        i += 1
+        if i > max_iteration:
+            break
+        if manager.bad_urls:
+            time.sleep(manager.delay)
+            manager.delay *= manager.coef
+            manager.add_websites(manager.bad_urls)
+            manager.bad_urls = []
+        else:
+            break
 
-    threads = []
-    for i in range(threads_num):
-        threads.append(threading.Thread(target=crawl_thread,
-                                        args=(i, manager)))
-        threads[i].start()
-
-    for i in range(threads_num):
-        threads[i].join()
 
 
 def main():
