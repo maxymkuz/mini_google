@@ -4,16 +4,16 @@
 
 use rocket::Request;
 use rocket::response::content::Json;
-use rocket::request::Form;
+// use rocket::request::Form;
 use rocket_contrib::templates::Template;
 use serde::Serialize;
 
-#[derive(FromForm, Debug)]
-struct Book {
-  title: String,
-  author: String,
-  isbn: String
-}
+// #[derive(FromForm, Debug)]
+// struct Book {
+//   title: String,
+//   author: String,
+//   isbn: String
+// }
 
 #[get("/")]
 fn index() -> Template {
@@ -40,25 +40,24 @@ fn hello() -> Json<&'static str> {
 }
 
 #[catch(404)]
-fn not_found(req: &Request) -> String {
-    print!("{}", req);
-    format!("Oh no! We couldn't find the requested path '{}'", req.uri())
+fn not_found(_req: &Request) -> String {
+    format!("Oh no! This is not a valid path ;=(")
 }
 
-#[post("/book", data = "<book_form>")]
-fn new_book(book_form: Form<Book>) -> String {
-  let book: Book = book_form.into_inner();
-  let mut dummy_db: Vec<Book> = Vec::new();
-  dummy_db.push(book);
-
-  format!("Book added successfully: {:?}", dummy_db)
-}
+// #[post("/book", data = "<book_form>")]
+// fn new_book(book_form: Form<Book>) -> String {
+//   let book: Book = book_form.into_inner();
+//   let mut dummy_db: Vec<Book> = Vec::new();
+//   dummy_db.push(book);
+//
+//   format!("Book added successfully: {:?}", dummy_db)
+// }
 
 fn main() {
   rocket::ignite()
     .register(catchers![not_found])
     .mount("/", routes![index])
-    .mount("/api", routes![hello, new_book])
+    .mount("/api", routes![hello])
     .attach(Template::fairing())
     .launch();
 }
