@@ -3,4 +3,6 @@ WORKDIR /code
 ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 COPY db_manipulator.py db_manipulator.py
-CMD ["python", "-u", "db_manipulator.py"]
+COPY api_usage.py api_usage.py
+# CMD ["python", "-u", "db_manipulator.py"]
+CMD ["python", "-u", "api_usage.py"]

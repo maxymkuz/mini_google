@@ -124,21 +124,22 @@ class DataBaseTable:
 # TODO я потім красиво перепишу і фіч допишу, але поки хай робе як робе
 
 if __name__ == '__main__':
-    # От приклади
-    print(1)
-    table = DataBaseTable("database", "admin", "postgres", "db", 5432, "websites_en")
-    print('Application started')
+    pass
+    # # От приклади
+    # print(1)
+    # table = DataBaseTable("database", "admin", "postgres", "db", 5432, "websites_en")
+    # print('Application started')
 
-    table.delete_all_entries()
-    # while True:
-    table.insert_row(('url1', '1977-07-23', 'some text'))
-    table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=True)
-    table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=False)
-    table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'))
-    table.insert_row(('url1', '1977-07-23', 'some text'), tokenize=False)
+    # table.delete_all_entries()
+    # # while True:
+    # table.insert_row(('url1', '1977-07-23', 'some text'))
+    # table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=True)
+    # table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'), tokenize=False)
+    # table.insert_row(('url2', '1977-07-23', 'some text 2 text', '2007-07-23'))
+    # table.insert_row(('url1', '1977-07-23', 'some text'), tokenize=False)
 
-    print("BY URL", table.get_row_by_url('url1'))
-    print("ALLL   ", table.get_all_rows())
-    time.sleep(3)
-    print('_'*20)
-    print(table.get_ranked_rows_by_query("some & 2", 2))
+    # print("BY URL", table.get_row_by_url('url1'))
+    # print("ALLL   ", table.get_all_rows())
+    # time.sleep(3)
+    # print('_'*20)
+    # print(table.get_ranked_rows_by_query("some & 2", 2))
