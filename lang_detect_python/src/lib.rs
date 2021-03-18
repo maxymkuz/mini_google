@@ -21,7 +21,7 @@ pub async fn send_lang_detection_query(text: &str) -> Result<Vec<(String, f64)>,
     // Send the request to the language detection server
     let client = Client::new();
     let res = client
-        .post("http://0.0.0.0:5000/detect")
+        .post("http://lang_detect_python:5001/detect")
         .json(&map)
         .send()
         .await
