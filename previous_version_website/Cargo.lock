@@ -222,14 +222,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
-name = "site-wasm"
-version = "0.1.0"
-dependencies = [
- "wasm-bindgen",
- "yew",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,6 +368,14 @@ name = "wasm-bindgen-shared"
 version = "0.2.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d6f8ec44822dd71f5f221a5847fb34acd9060535c1211b70a05844c0f6383b1"
+
+[[package]]
+name = "website"
+version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+ "yew",
+]
 
 [[package]]
 name = "yew"
