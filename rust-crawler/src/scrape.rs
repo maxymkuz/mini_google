@@ -5,6 +5,7 @@ use crate::{ScrapeData, ScrapeParam};
 use reqwest::Url;
 use select::document::Document;
 use select::predicate::{Element, Name, Predicate};
+use snailquote::unescape;
 use std::collections::BTreeSet;
 
 /// A scraper for a single webpage. Creates an HTTP client to connect to it,
@@ -44,15 +45,8 @@ pub async fn scrape(scrape_data: ScrapeParam) -> std::result::Result<ScrapeData,
     // Finding all links on the page
     let all_links = get_links_from_html(&res, &webpage_url, &high_level_domain);
 
-    // Searching for structured data on the page.
-    // We are looking for <script type="application/ld+json"> and we need all of its contents
-    // TODO: probably move this out into a separate function and parse this into pure text
-    let structured_data: String = res
-        .find(Name("script"))
-        .filter(|n| n.attr("type") == Some("application/ld+json"))
-        .map(|x| x.text())
-        .nth(0)
-        .unwrap_or("The page didn't have structured data".to_string());
+    let structured_data = get_structured_data(&res);
+
     let webpage = webpage_url.to_string();
 
     Ok(ScrapeData {
@@ -63,25 +57,58 @@ pub async fn scrape(scrape_data: ScrapeParam) -> std::result::Result<ScrapeData,
     })
 }
 
+/// Parsing the structured data on the page
+/// We are looking for <script type="application/ld+json"> and we need all of its contents
+fn get_structured_data(html: &Document) -> Option<String> {
+    let structured_data = html
+        .find(Name("script"))
+        .filter(|n| n.attr("type") == Some("application/ld+json"))
+        .map(|x| x.text())
+        .nth(0)?;
+
+    // I am looking into ways to flatten this Json and basically get all of the
+    // text we are interested in from it, apparently this is nearly impossible.
+    // The only ld-json Rust implementation currently states that flattening
+    // is not available, but will be in the future. Should probably track that
+    // or help out: https://github.com/timothee-haudebourg/json-ld#flattening
+    //
+    // OH AND IT ONLY WORKS ON NIGHTLY wow.
+
+    Some(structured_data)
+}
+
 /// Receives an HTML text file, parses it and returns only the text on it without
 /// the tags and attributes
 fn get_full_text(html: &Document) -> String {
-    let blacklist: BTreeSet<&'static str> =
-        ["style", "html", "meta", "head", "script", "p", "a", "head"]
-            .iter()
-            .cloned()
-            .collect();
-    html.find(Element)
+    // We are only looking at the tags which most likely contain valuable text. This might need
+    // some tweaking, but works a lot better than the 'blacklist' system that was here before
+    let whitelist: BTreeSet<&'static str> = [
+        "p", "b", "strong", "italic", "i", "em", "mark", "sub", "sup", "button", "caption", "cite",
+        "code", "li", "form", "label", "q", "td", "textarea",
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    // Parse the html text into plain text
+    let parsed_text = html
+        .find(Element)
         .filter(|n| match n.name() {
-            Some(name) => !blacklist.contains(name),
-            None => true,
+            Some(name) => whitelist.contains(name),
+            None => false,
         })
         .map(|x| x.text())
         .collect::<Vec<String>>()
         .join(" ")
         .split_whitespace()
         .collect::<Vec<&str>>()
-        .join(" ")
+        .join(" ");
+
+    // Unescape the string so it'd look nicer
+    match unescape(&parsed_text) {
+        Ok(unescaped_text) => return unescaped_text,
+        Err(_) => return parsed_text,
+    }
 }
 
 /// Looks for all elements in the HTML body that are valid links, returning unique ones.

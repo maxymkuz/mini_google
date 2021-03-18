@@ -10,7 +10,6 @@ use reqwest::Url;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::{collections::BTreeMap, time::Instant};
-use tokio_postgres::NoTls;
 
 mod scrape;
 mod thread_pool;
@@ -117,6 +116,7 @@ fn arg_parser() -> Arguments {
 ///
 /// So the possible paths in this state machine for every URL are:
 ///
+///```text
 ///                 ErrorFinal
 ///                      ^
 /// VisitedFinal         |
@@ -126,7 +126,7 @@ fn arg_parser() -> Arguments {
 ///          ^
 ///          |
 ///       NotSent
-///
+///```
 #[derive(Debug)]
 enum UrlState {
     /// Not sent and not visited - should be picked up by the thread and sent to workers
@@ -197,32 +197,11 @@ async fn main() -> Result<()> {
     // currently all of this is commented since I'd have to rework it anyway
     //
     // Establishing the database connection pool
-    //let (client, connection) = tokio_postgres::connect(
-    //"dbname=main_fts user=postgres password=postgres host=localhost port=5432",
-    //NoTls,
-    //)
-    //.await?;
 
     // Spawn the database connector in a separate async task
-    //tokio::spawn(async move {
-    //if let Err(e) = connection.await {
-    //eprintln!("connection error: {}", e);
-    //}
-    //});
 
-    // Creating the database tables we need if they are not already created
-    //client
-    //.query(
-    //"CREATE TABLE IF NOT EXISTS websites_en (
-    //site_id SERIAL NOT NULL,
-    //url TEXT NOT NULL,
-    //date_added DATE NOT NULL,
-    //last_modified DATE,
-    //site_text TEXT NOT NULL,
-    //tokenized TSVECTOR);",
-    //&[],
-    //)
-    //.await?;
+    // TODO: Ensure that we've connected to the database before starting the application,
+    // retry if not
 
     // Creating a thread pool with asynchronous scrapper workers to send URLs to
     let pool = ThreadPool::new(args.threads_num, args.user_agent, high_level_domain);
@@ -310,10 +289,7 @@ async fn main() -> Result<()> {
                     // Writing collected structured data to the file
                     // Should probaly switch to this: https://docs.rs/async-std/1.9.0/async_std/fs/struct.File.html#impl-Write
                     // But this is more of a debug thing so who cares
-                    write!(output, "{}: \n{:?}\n{:?}", url, sd, full_text)?;
-
-                    //structured_data.insert(url.clone(), sd);
-                    //visited_webpages.insert(url.clone());
+                    write!(output, "{}:\n{:?}\n\n", url, full_text)?;
 
                     // Adding newly collected links to the webpage list
                     new_urls.into_iter().for_each(|url| {
@@ -322,24 +298,8 @@ async fn main() -> Result<()> {
 
                     // Switching the state of the url to visited!
                     webpages.remove(&url);
-                    //let state = webpages.entry(url).or_insert(UrlState::Sent);
-                    //match state {
-                    //UrlState::Sent | UrlState::ErrorAttempt(_, _) => {
-                    //*state = UrlState::VisitedFinal
-                    //}
-                    //_ => (),
-                    //}
 
                     // Send the collected data into SQL database
-                    //let now: NaiveDate = Utc::now().date().naive_utc();
-
-                    //client
-                    //.query(
-                    //"INSERT INTO websites_en (url, date_added, site_text, tokenized) \
-                    //VALUES ($1, $2, $3, to_tsvector($4));",
-                    //&[&url, &now, &full_text, &full_text],
-                    //)
-                    //.await?;
 
                     // We've just received scrapped data, we need to send a new set of URLs back
                     // Updating the progress bar

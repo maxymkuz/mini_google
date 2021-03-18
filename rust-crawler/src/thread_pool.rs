@@ -19,7 +19,6 @@ error_chain! {
       foreign_links {
           ReqError(reqwest::Error);
           IoError(std::io::Error);
-            SqlError(tokio_postgres::Error);
       }
 }
 
@@ -28,7 +27,7 @@ error_chain! {
 /// if it has encountered errors, sends back the URL that errored
 pub enum WorkerResult {
     /// The URL was parsed successfully, return all of the scrapped data
-    Done(String, String, BTreeSet<String>, String),
+    Done(String, Option<String>, BTreeSet<String>, String),
     /// Something went wrong during the processing
     Failed(String),
 }
@@ -97,7 +96,7 @@ pub struct ScrapeParam {
 pub struct ScrapeData {
     pub webpage: String,
     pub all_links: BTreeSet<String>,
-    pub structured_data: String,
+    pub structured_data: Option<String>,
     pub full_text: String,
 }
 
