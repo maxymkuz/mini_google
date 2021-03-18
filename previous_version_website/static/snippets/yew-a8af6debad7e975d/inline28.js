@@ -1,1 +1,0 @@
-export function __cargo_web_snippet_2c6a2fabd6154e43938598e5d63f78c9e0277d3c(Module, $0) { $0 = Module.STDWEB_PRIVATE.to_js($0);var data=($0);self.postMessage(data); }

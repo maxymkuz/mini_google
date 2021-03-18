@@ -32,6 +32,12 @@ enum UserSearchError {
 impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
     type Error = UserSearchError;
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        let result: String = request.headers().get("user_search");
+        println!("Hello, {:?}!", result);
+        // request.cookies()
+        //         .get_private("user_id")
+        //         .and_then(|cookie| cookie.value().parse().ok())
+        //         .and_then(|id| db.get_user(id).ok())
         Outcome::Success(UserSearch("yes".to_string()))
     }
 }
@@ -69,27 +75,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
 //     }
 // }
 
-// #[get("/home")]
-// fn home(name: String) -> Template {
-//     format!("Hello, {}!", name.as_str());
-//     let mut context = HashMap::new();
-//     context.insert("title", String::from("Jane"));
-//     // #[derive(Serialize)]
-//     // struct Context {
-//     //   first_name: String,
-//     //   last_name: String
-//     // }
-//     //
-//     // let context = Context {
-//     //   first_name: String::from("Jane"),
-//     //   last_name: String::from("Doe")
-//     // };
-//
-//     Template::render("home", &context)
-// }
 
 #[get("/")]
-fn index() -> Template {
+fn index(user_search: UserSearch) -> Template {
+    println!("Hello, {:?}!", user_search);
     let mut context = HashMap::new();
     context.insert("title", String::from("Jane"));
 
@@ -99,10 +88,10 @@ fn index() -> Template {
 #[get("/hello")]
 fn hello(name: UserSearch) -> String {
     format!("Hello, {:?}!", name)
-  //   Json("{
-  //   'status': 'success',
-  //   'message': 'Hello API!'
-  // }")
+    //   Json("{
+    //   'status': 'success',
+    //   'message': 'Hello API!'
+    // }")
 }
 
 #[catch(404)]
