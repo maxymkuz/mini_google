@@ -4,17 +4,16 @@
 extern crate rocket;
 
 // use rocket::Request;
-use rocket::Outcome;
-use rocket::http::Status;
-use rocket::request::{self, Request, FromRequest};
+use rocket::http::{RawStr, Status};
+use rocket::request::{self, Form, FromRequest, Request};
 use rocket::response::content::Json;
-use rocket::request::Form;
+use rocket::Outcome;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
-use rocket::http::RawStr;
 // use rocket::request::FromParam;
 // use rocket::http::{Cookie, CookieJar};
 // use async_trait::async_trait;
+// use serde::Serialize;
 
 #[derive(Debug)]
 struct UserSearch(String);
@@ -29,10 +28,19 @@ enum UserSearchError {
     No,
 }
 
+// A.S.: Why do we need to implement all of this stuff (which also does not compile)
+// if user's search is only a String, which has a default FromRequest implementation?
+// Are we planning to make UserSearch something other than a String?
 impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
     type Error = UserSearchError;
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let result: String = request.headers().get("user_search");
+        // A.S.: .get(value) returns an iterator over this header's values, not a string
+        let result: String = request
+            .headers()
+            .get("user_search")
+            .nth(0)
+            .unwrap()
+            .to_string();
         println!("Hello, {:?}!", result);
         // request.cookies()
         //         .get_private("user_id")
@@ -41,8 +49,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
         Outcome::Success(UserSearch("yes".to_string()))
     }
 }
-
-// use serde::Serialize;
 
 // #[derive(FromForm, Debug)]
 // struct Book {
@@ -75,16 +81,22 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserSearch {
 //     }
 // }
 
-
+// A.S. It's really weird that you take UserSearch as a necessary argument on the homepage.
+// Isn't it supposed to be an invitation for the user to input the query?
+// I've removed it temporarily, this way you can actually access the homepage
 #[get("/")]
-fn index(user_search: UserSearch) -> Template {
-    println!("Hello, {:?}!", user_search);
+//fn index(user_search: UserSearch) -> Template {
+fn index() -> Template {
+    //println!("Hello, {:?}!", user_search);
     let mut context = HashMap::new();
     context.insert("title", String::from("Jane"));
 
     Template::render("home", &context)
 }
 
+// A.S.: I don't really understand how this is supposed to work. From what I've read, name here
+// acts as a Request Guard, not as a normal query. Maybe you actually want this:
+// https://rocket.rs/v0.4/guide/requests/#query-strings ?
 #[get("/hello")]
 fn hello(name: UserSearch) -> String {
     format!("Hello, {:?}!", name)
