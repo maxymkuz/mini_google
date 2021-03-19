@@ -207,7 +207,7 @@ async fn main() -> Result<()> {
     let pool = ThreadPool::new(args.threads_num, args.user_agent, high_level_domain);
 
     // Opening an output file
-    let mut output = File::create(args.output_file)?;
+    //let mut output = File::create(args.output_file)?;
 
     // A nice TUI debug interface with the current progress
     // TODO: Add a nice way to see what each thread is doing right now
@@ -231,6 +231,17 @@ async fn main() -> Result<()> {
     let attempt_time_wait: Vec<u16> = (0u32..args.repeat_limit as u32)
         .map(|i| START_WAIT_TIME + EXPONENT.pow(i))
         .collect();
+
+    // TODO: Hey, I should definitely look into what might be the bottleneck here
+    // (not really a bottleneck since it's crazily fast, but still) and if it's the queue,
+    // consider switching to crossbeam's MCPC bounded queue. Will solve a few problems I have
+    // here and get rid of weird hacks I put on top of std mpsc channel. Will have to see
+
+    // TODO: Have no idea whether it's a valid concern, from what my perf runs and flamegraphs and
+    // a little focused profiling told me the absolute majority of our CPU time is spent parsing
+    // the HTML page, but: I might still have to figure stuff out with lifetimes here. We are
+    // definitely copying stuff around unnecessarily but I am too lazy to sit down and improve this
+    // code's speed by 5% by worsening its readability to infinity :)
 
     // Crawling through all webpages until we have enough unique pages crawled
     while visited_webpages < args.webpage_limit {
@@ -289,11 +300,11 @@ async fn main() -> Result<()> {
                     // Writing collected structured data to the file
                     // Should probaly switch to this: https://docs.rs/async-std/1.9.0/async_std/fs/struct.File.html#impl-Write
                     // But this is more of a debug thing so who cares
-                    write!(output, "{}:\n{:?}\n\n", url, full_text)?;
+                    //write!(output, "{} ", url);
 
                     // Adding newly collected links to the webpage list
-                    new_urls.into_iter().for_each(|url| {
-                        webpages.entry(url.clone()).or_insert(UrlState::NotSent);
+                    new_urls.into_iter().for_each(|new_url| {
+                        webpages.entry(new_url.clone()).or_insert(UrlState::NotSent);
                     });
 
                     // Switching the state of the url to visited!
@@ -341,6 +352,8 @@ async fn main() -> Result<()> {
     println!("We have visited {} webpages", visited_webpages);
 
     // Dropping the thread pool and joining all the threads
+    // I had to do this explicitly since we wrote to the file after it, there is really no need to
+    // do this still, but whatever, won't bother with it
     println!("Hold on while we close the thread pool...");
     drop(pool);
 

@@ -1,10 +1,8 @@
 **Parallel crawler for structured data in Rust**
 
-Docker image is just 14mb thanks to the static compilation and scratch image
+Docker image is just 14mb thanks to the static compilation, multi-stage build and scratch image.
 
 ## Usage
-
-Just run it and it will print out structured data found on the page:
 
 ```bash
 # A quick test build of the rust executable
@@ -23,13 +21,29 @@ cargo run -- --help
 docker run --rm lastgenius/rust-crawler -i file.txt -o out.txt -t 8
 ```
 
+## Examples
+
+A few files that this monster has spent its time on:
+
+* [A little snippet of shuffled links for you to have something to test the crawler with](./urls.txt)
+* [2.5 Gb Full Text Data with URLs](https://drive.google.com/file/d/1OZK2P9GTj7EXZIXBv5jdhKP9Ed_kOlQ6/view?usp=sharing)
+* [400 Mb of Full Text Data + New Links from URLs](https://drive.google.com/file/d/1KCW3m_wpx0qCVxZlu0XP30YiTzPZtett/view?usp=sharing)
+* [900 Mb of unique shuffled links](https://drive.google.com/file/d/1qzVEbmsrvsqiHoHHExq4Hy0PAEguK9jq/view?usp=sharing)
+
+You can play around with these files, better to use different CLI apps to keep yourself sane:
+
+* Sort lines, keep unique ones: `sort file.txt -o out.txt -u`
+* Shuffle lines `shuf file.txt -o out.txt` 
+
+*And so on...*
+
 ## Architecture
 
 This is a rough outline of how this crawler works. I will try to update it in the
 case of any major changes, but it's always better to check out the module's documentation
 itself in case you need to understand everything better and on a deeper level. 
 
-You can build the documentation locally with `cargo doc --open`, and choosing the
+You can build the documentation locally with `cargo doc --open`, and view it by choosing the
 crate from the menu on the left.
 
 Overall the program works like this, with a single main thread starting off, reading user input
