@@ -21,13 +21,11 @@ services:
 
   # python_app:
   #   build: ./python_app/
-  #   depends_on:
-  #     - db
+
 
   # rust_app:
   #   build: ./rust_crawler/
-  #   depends_on:
-  #     - db
+
   #   command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
 
   # frontend:
