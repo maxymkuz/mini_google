@@ -1,12 +1,12 @@
 version: "3.8"
 services:
-  db:
-    build: ./database/
-    ports:
-      - 5405:5432
-    restart: always
-    volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+  # db: # old postgres, should delete probably
+  #   build: ./database/
+  #   ports:
+  #     - 5405:5432
+  #   restart: always
+  #   volumes:
+  #     - ./postgres-data:/var/lib/postgresql/data
 
   lang_detect_python:
     build: ./lang_detect_python/
@@ -19,19 +19,34 @@ services:
       FLASK_DEBUG: 1
     # restart: always
 
-  python_app:
-    build: ./python_app/
-    depends_on:
-      - db
+  # python_app:
+  #   build: ./python_app/
+  #   depends_on:
+  #     - db
 
-  #rust_app:
-    #build: ./rust-crawler/
-    #depends_on:
-      #- db
-    #command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
+  # rust_app:
+  #   build: ./rust_crawler/
+  #   depends_on:
+  #     - db
+  #   command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
 
-  frontend:
-    build: ./website/
+  # frontend:
+  #   build: ./website/
+  #   ports:
+  #     - 5000:5000
+
+  elasticsearch:
+    image: "elasticsearch:5"
+    networks:
+      - frontend # set up a network that we can use across different containers
+    restart: always
+    volumes:
+      - ./ES_DATA:/usr/share/elasticsearch/data  # where we will store indexed data
+    environment:
+      - discovery.type=single-node # don't pay attention to these
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
-      - 5000:5000
-
+      - "9200:9200"  # port on container->port on host machine
+networks:
+  frontend:
