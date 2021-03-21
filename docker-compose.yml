@@ -8,25 +8,25 @@ services:
   #   volumes:
   #     - ./postgres-data:/var/lib/postgresql/data
 
-  lang_detect_python:
-    build: ./lang_detect_python/
-    volumes: 
-      - ./lang_detect_python/:/usr/src/app/
-    ports: 
-      - 5001:5001
-    environment: 
-      PORT: 5001
-      FLASK_DEBUG: 1
+  # lang_detect_python:
+  #   build: ./lang_detect_python/
+  #   volumes: 
+  #     - ./lang_detect_python/:/usr/src/app/
+  #   ports: 
+  #     - 5001:5001
+  #   environment: 
+  #     PORT: 5001
+  #     FLASK_DEBUG: 1
     # restart: always
 
   # python_app:
   #   build: ./python_app/
 
 
-  # rust_app:
-  #   build: ./rust_crawler/
+  rust_app:
+    build: ./rust_crawler/
 
-  #   command: --inp_file=file.txt --out_file=out.txt --threads=4 --limit=200
+    command: --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
 
   # frontend:
   #   build: ./website/
@@ -38,6 +38,11 @@ services:
     networks:
       - frontend # set up a network that we can use across different containers
     restart: always
+    healthcheck:  # to prevent apps from quering inexisting database
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - ./ES_DATA:/usr/share/elasticsearch/data  # where we will store indexed data
     environment:

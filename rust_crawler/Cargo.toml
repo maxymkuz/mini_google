@@ -1,5 +1,5 @@
 [package]
-name = "rust_crawler"
+name = "rust-crawler"
 version = "0.1.0"
 authors = ["LastGenius-edu <as.andreysultanov@gmail.com>"]
 edition = "2018"
