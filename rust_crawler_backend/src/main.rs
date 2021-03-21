@@ -1,10 +1,20 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+// use std::intrinsics::prefetch_read_instruction;
 // Module that currently is supposed to read data from file, and push it to database somehow (NOT IMPLEMENTED YET)
 // Later, this will be fully-functional backend for crawlers to identify the language and talk to db
 
+mod lib;
+
 fn main() {
+    file_to_db();
+}
+
+/// Example usage of the query sender
+#[tokio::main]
+async fn file_to_db() {
+    println!("got here");
     if let Ok(lines) = read_lines("./data/100_lines_collected_data.txt") {
         for (index, line) in lines.enumerate() {
             if let Ok(ip) = line {
@@ -17,7 +27,11 @@ fn main() {
                 }
                 if index % 3 == 1 { // if it is just a text
                     let text: String = ip;
-                    println!(text);
+                    println!("{}", text);
+                    let languages = lib::send_lang_detection_query(&text).await.unwrap();
+                    // languages[0] = ("en".parse().unwrap(), 0.0001);
+                    let dominant_lang = &languages[0];
+                    println!("{:?}", dominant_lang);
                 }
             }
         }
