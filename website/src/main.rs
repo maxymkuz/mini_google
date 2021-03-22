@@ -7,6 +7,7 @@ use rocket::http::RawStr;
 use rocket::request::Request;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
+use rocket_contrib::serve::StaticFiles;
 // use rocket::response::content::Json;
 
 // Homepage of the website
@@ -29,7 +30,8 @@ fn search_page(user_search: &RawStr) -> Template {
 }
 
 // Catching some errors that might occur
-// TODO: create an html template for errors (with cat, of course)
+// TODO: 1. create an html template for errors (with cat, of course)
+//       2. serve cats on our server
 #[catch(404)]
 fn not_found(_req: &Request) -> Template {
     let mut context = HashMap::new();
@@ -49,6 +51,7 @@ fn main() {
     rocket::ignite()
         .register(catchers![not_found, bad_request])
         .mount("/", routes![index, search_page])
+        .mount("/public", StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")))
         .attach(Template::fairing())
         .launch();
 }
