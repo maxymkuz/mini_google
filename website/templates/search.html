@@ -2,7 +2,8 @@
     <meta charset="utf-8"/>
     <title>Mini Google</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/2b242693ae.js" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" type="image/jpg" href="/public/icon_cat.png"/>
 </head>
 
 
@@ -48,9 +49,7 @@
                 <div class="field">
                     <div class="columns">
                         <div class="column is-1">
-            <span class="icon is-large">
-                <i class="fa fa-meh-o"></i>
-            </span>
+
                         </div>
                         <div class="column">
                             <form action="/search" method="get">
@@ -97,7 +96,7 @@
                             <div class="card">
                                 <a href="">
                                     <div class="card-content">
-                                        <h2 class="title is-4">{{title}}</h2>
+                                        <h2 class="title is-4">{% set my_var = "hello" %}{{title}}</h2>
                                         <p class="subtitle">Path</p>
                                         <p class="subtitle">Description</p>
                                     </div>
@@ -108,7 +107,7 @@
                             <h2>
                                 <span class="inactive"><i class="fa fa-arrow-left"></i></span>
                                 1 page
-                                <a class="active" href="{{ paginator.next }}"><i class="fa fa-arrow-right"></i></a>
+                                <a class="active" href=""><i class="fa fa-arrow-right"></i></a>
                             </h2>
                         </div>
                     </ul>

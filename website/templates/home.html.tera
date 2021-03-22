@@ -1,0 +1,115 @@
+<head>
+    <meta charset="utf-8"/>
+    <title>Mini Google</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+    <script src="https://kit.fontawesome.com/2b242693ae.js" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" type="image/jpg" href="/public/icon_cat.png"/>
+</head>
+
+
+<body>
+<header>
+    <div class="section">
+        <h1 class="title">Mini Google</h1>
+        <h2 class="subtitle">Experimental Search Engine</h2>
+    </div>
+</header>
+
+<section class="section">
+    <div class="columns">
+        <div class="column is-one-quarter">
+
+            <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
+            <ul>
+                <li><a href="">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-eye">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Search History
+                        </div>
+                    </div>
+                </a></li>
+                <li><a href="">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-bookmark">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Bookmarks
+                        </div>
+                    </div>
+                </a></li>
+            </ul>
+        </div>
+        <div class="column">
+            <div class="container">
+                <div class="field">
+                    <div class="columns">
+                        <div class="column is-1">
+                        </div>
+                        <div class="column is-10">
+                            <form action="/search" method="get">
+                                <div class="field has-addons">
+                                    <p class="control is-expanded">
+                                        <label>
+                                            <input class="input is-link" autofocus type="text" placeholder="Search"
+                                                   name="user_search">
+                                        </label>
+                                    </p>
+                                    <div class="control">
+                                        <button type="submit" class="button is-link">
+                                            <i class="fa fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <ul class="nostyle home">
+                        <li class="section">
+                            <div class="card">
+                                <a href="">
+                                    <div class="card-content">
+                                        <div class="columns is-vcentered">
+                                            <div class="column is-2">
+                                                <figure class="image is-128x128">
+                                                    <img class="is-rounded" src="/public/winking_cat.png"
+                                                         alt="Winking Cat">
+                                                </figure>
+                                            </div>
+                                            <div class="column">
+                                                <h2 class="title is-4">Welcome to Mini Google!</h2>
+                                                <p class="subtitle">Try searching for something, results will be
+                                                    displayed here!</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </li>
+                        <div style="text-align: center">
+                            <h2>
+                                <span class="inactive"><i class="fa fa-arrow-left"></i></span>
+                                Meow
+                                <span class="inactive"><i class="fa fa-arrow-right"></i></span>
+                            </h2>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>
+            Project for Architecture of Computer Systems Course. <a href="https://github.com/maxymkuz/mini_google"><i
+                class="fa fa-github-alt"></i></a>
+        </p>
+    </div>
+</footer>

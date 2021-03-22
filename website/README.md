@@ -1,7 +1,7 @@
-### *Coming soon...* 
+### Mini Google Website
+Web application written in Rust.
 
 ## Details:
-
 Currently backend works with json files of such structure:
 ```
 {
@@ -11,6 +11,8 @@ Currently backend works with json files of such structure:
   }
 }
 ```
+
+Webapp uses Rust Rocket framework and Tera templates.
 
 ## Usage:
 
@@ -26,3 +28,7 @@ With Docker:
 ```
 coming soon
 ```
+
+Here is how main page should look like:
+
+![main page of the web app (has a cat)](../images/home_page.png)

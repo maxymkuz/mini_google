@@ -3,6 +3,7 @@
     <title>Mini Google</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="shortcut icon" type="image/jpg" href="/public/icon_cat.png"/>
 </head>
 
 <body>
@@ -14,7 +15,7 @@
 </header>
 
 <section class="section">
-    <div class="columns">
+    <div class="columns is-vcentered">
         <div class="column is-4">
         </div>
         <div class="column is-2 is-centered">
