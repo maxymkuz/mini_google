@@ -31,4 +31,4 @@ coming soon
 
 Here is how main page should look like:
 
-![](../images/home_page.png)
+![main page of the web app (has a cat)](../images/home_page.png)
