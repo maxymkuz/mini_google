@@ -4,6 +4,7 @@
 extern crate rocket;
 
 // use rocket::Request;
+use rocket::config::{Config, Environment};
 use rocket::http::{RawStr, Status};
 use rocket::request::{self, Form, FromRequest, Request};
 use rocket::response::content::Json;
@@ -126,8 +127,14 @@ fn bad_request(_req: &Request) -> String {
 // }
 
 fn main() {
-    rocket::ignite()
-        .register(catchers![not_found])
+    let config = Config::build(Environment::Staging)
+    .address("0.0.0.0")
+    .port(5000)
+    .finalize()?;
+
+    let app = rocket::custom(config);
+
+    app.register(catchers![not_found])
         .mount("/", routes![index])
         .mount("/api", routes![hello])
         .attach(Template::fairing())
