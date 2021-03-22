@@ -9,18 +9,20 @@
 
 <body>
 <header>
-    <div class="section">
-        <h1 class="title">Mini Google</h1>
-        <h2 class="subtitle">Experimental Search Engine</h2>
-    </div>
+    <a href="/">
+        <div class="section">
+            <h1 class="title">Mini Google</h1>
+            <h2 class="subtitle">Experimental Search Engine</h2>
+        </div>
+    </a>
 </header>
 
 <section class="section">
     <div class="columns">
         <div class="column is-one-quarter">
-            <h2 class="subtitle">Library</h2>
+            <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
             <ul>
-                <li><a href="">
+                <li><a href="/history">
                     <div class="columns">
                         <div class="column is-1">
                             <i class="fa fa-eye">
@@ -31,7 +33,7 @@
                         </div>
                     </div>
                 </a></li>
-                <li><a href="">
+                <li><a href="/bookmarks">
                     <div class="columns">
                         <div class="column is-1">
                             <i class="fa fa-bookmark">
@@ -49,9 +51,8 @@
                 <div class="field">
                     <div class="columns">
                         <div class="column is-1">
-
                         </div>
-                        <div class="column">
+                        <div class="column is-10">
                             <form action="/search" method="get">
                                 <div class="field has-addons">
                                     <p class="control is-expanded">
@@ -68,41 +69,21 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="column is-3">
-                            <div class="dropdown is-hoverable">
-                                <div class="dropdown-trigger">
-                                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                                        <span>Search Language</span>
-                                        <span class="icon is-small">
-                        <i class="fa fa-angle-down" aria-hidden="true"></i>
-                        </span>
-                                    </button>
-                                </div>
-                                <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                    <div class="dropdown-content">
-                                        <a href="#" class="dropdown-item is-active">
-                                            English
-                                        </a>
-                                        <a class="dropdown-item">
-                                            Українська
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <ul class="nostyle home">
+                        {% for result in results %}
                         <li class="section">
                             <div class="card">
-                                <a href="">
+                                <a href="{{result.path}}">
                                     <div class="card-content">
-                                        <h2 class="title is-4">{% set my_var = "hello" %}{{title}}</h2>
-                                        <p class="subtitle">Path</p>
-                                        <p class="subtitle">Description</p>
+                                        <h2 class="title is-4">{{result.title}}</h2>
+                                        <p class="subtitle">{{result.path}}</p>
+                                        <p class="subtitle">{{result.description}}</p>
                                     </div>
                                 </a>
                             </div>
                         </li>
+                        {% endfor %}
                         <div style="text-align: center">
                             <h2>
                                 <span class="inactive"><i class="fa fa-arrow-left"></i></span>

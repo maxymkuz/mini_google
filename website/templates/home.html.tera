@@ -9,10 +9,12 @@
 
 <body>
 <header>
-    <div class="section">
-        <h1 class="title">Mini Google</h1>
-        <h2 class="subtitle">Experimental Search Engine</h2>
-    </div>
+    <a href="/">
+        <div class="section">
+            <h1 class="title">Mini Google</h1>
+            <h2 class="subtitle">Experimental Search Engine</h2>
+        </div>
+    </a>
 </header>
 
 <section class="section">
@@ -21,7 +23,7 @@
 
             <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
             <ul>
-                <li><a href="">
+                <li><a href="/history">
                     <div class="columns">
                         <div class="column is-1">
                             <i class="fa fa-eye">
@@ -32,7 +34,7 @@
                         </div>
                     </div>
                 </a></li>
-                <li><a href="">
+                <li><a href="/bookmarks">
                     <div class="columns">
                         <div class="column is-1">
                             <i class="fa fa-bookmark">
@@ -72,7 +74,7 @@
                     <ul class="nostyle home">
                         <li class="section">
                             <div class="card">
-                                <a href="">
+                                <a href="#">
                                     <div class="card-content">
                                         <div class="columns is-vcentered">
                                             <div class="column is-2">

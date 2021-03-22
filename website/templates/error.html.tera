@@ -8,23 +8,23 @@
 
 <body>
 <header>
-    <div class="section">
-        <h1 class="title">Mini Google</h1>
-        <h2 class="subtitle">Experimental Search Engine</h2>
-    </div>
+    <a href="/">
+        <div class="section">
+            <h1 class="title">Mini Google</h1>
+            <h2 class="subtitle">Experimental Search Engine</h2>
+        </div>
+    </a>
 </header>
 
 <section class="section">
-    <div class="columns is-vcentered">
-        <div class="column is-4">
-        </div>
+    <div class="columns is-vcentered is-centered">
         <div class="column is-2 is-centered">
             <figure class="image is-128x128">
                 <img class="is-rounded" src="/public/crying_cat.jpg"
                      alt="Crying Cat">
             </figure>
         </div>
-        <div class="column is-3">
+        <div class="column is-4">
             <p class="title is-4">Crying Cat: </p>
             <p class="title is-4">"{{error}}"</p>
         </div>
