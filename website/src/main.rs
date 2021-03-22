@@ -3,26 +3,23 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::config::{Config, Environment};
-use rocket::http::{RawStr, Status};
-use rocket::request::{self, Form, FromRequest, Request};
-use rocket::response::content::Json;
-use rocket::Outcome;
+use rocket::http::RawStr;
+use rocket::request::Request;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
+// use rocket::response::content::Json;
 
-// A.S. It's really weird that you take UserSearch as a necessary argument on the homepage.
-// Isn't it supposed to be an invitation for the user to input the query?
-// I've removed it temporarily, this way you can actually access the homepage
+// Homepage of the website
 #[get("/")]
 fn index() -> Template {
-    //println!("Hello, {:?}!", user_search);
     let mut context = HashMap::new();
     context.insert("title", String::from("Jane"));
 
     Template::render("home", &context)
 }
 
+// Page, generated after user searches for something
+// TODO: create a template for a case, when there are no search results
 #[get("/search?<user_search>")]
 fn search_page(user_search: &RawStr) -> Template {
     let mut context = HashMap::new();
@@ -31,30 +28,27 @@ fn search_page(user_search: &RawStr) -> Template {
     Template::render("home", &context)
 }
 
-// A.S.: I don't really understand how this is supposed to work. From what I've read, name here
-// acts as a Request Guard, not as a normal query. Maybe you actually want this:
-// https://rocket.rs/v0.4/guide/requests/#query-strings ?
-#[get("/hello/<name>")]
-fn hello(name: &RawStr) -> String {
-    format!("Hello, {}!", name)
-}
-
+// Catching some errors that might occur
+// TODO: create an html template for errors (with cat, of course)
 #[catch(404)]
-fn not_found(_req: &Request) -> String {
-    format!("Oh no! This is not a valid path ;=(")
+fn not_found(_req: &Request) -> Template {
+    let mut context = HashMap::new();
+    context.insert("error", String::from("Oh no! This is not a valid path ;=("));
+    Template::render("error", &context)
 }
 
 #[catch(400)]
-fn bad_request(_req: &Request) -> String {
-    format!("Oh no! A bad request was caught ;=(")
+fn bad_request(_req: &Request) -> Template {
+    let mut context = HashMap::new();
+    context.insert("error", String::from("Oh no! A bad request was caught ;=("));
+    Template::render("error", &context)
 }
 
 
 fn main() {
     rocket::ignite()
-        .register(catchers![not_found])
+        .register(catchers![not_found, bad_request])
         .mount("/", routes![index, search_page])
-        .mount("/api", routes![hello])
         .attach(Template::fairing())
         .launch();
 }
