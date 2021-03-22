@@ -1,6 +1,32 @@
-{
-  "website title": {
-    "url": "website url",
-    "description": "short description"
+[
+  {
+    "title": "Google",
+    "url": "https://duckduckgo.com/",
+    "description": "surely not duckduckgo"
+  },
+  {
+    "title": "Dog",
+    "url": "https://jooinn.com/images/dog-67.jpg",
+    "description": "such a good dog"
+  },
+  {
+    "title": "Another dog",
+    "url": "https://www.wallpapergeeks.com/wp-content/uploads/2014/02/Mutt-Dog-Wallpaper.jpg",
+    "description": "all dogs are great"
+  },
+  {
+    "title": "Cat",
+    "url": "https://www.rover.com/blog/wp-content/uploads/2019/02/cat-favorite-hand.jpg",
+    "description": "do you like cats?"
+  },
+  {
+    "title": "UCU",
+    "url": "https://www.ucu.org/",
+    "description": "not exactly UCU"
+  },
+  {
+    "title": "The Beatles",
+    "url": "https://www.youtube.com/watch?v=hL0tnrl2L_U",
+    "description": "i run out of ideas"
   }
-}
+]

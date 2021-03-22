@@ -20,6 +20,7 @@
 <section class="section">
     <div class="columns">
         <div class="column is-one-quarter">
+
             <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
             <ul>
                 <li><a href="/history">
@@ -71,24 +72,32 @@
                         </div>
                     </div>
                     <ul class="nostyle home">
-                        {% for result in results %}
                         <li class="section">
                             <div class="card">
-                                <a href="{{result.url}}">
+                                <a href="#">
                                     <div class="card-content">
-                                        <h2 class="title is-4">{{result.title}}</h2>
-                                        <p class="subtitle">{{result.url}}</p>
-                                        <p class="subtitle">{{result.description}}</p>
+                                        <div class="columns is-vcentered">
+                                            <div class="column is-2">
+                                                <figure class="image is-128x128">
+                                                    <img class="is-rounded" src="/public/crying_cat.png"
+                                                         alt="Crying Cat">
+                                                </figure>
+                                            </div>
+                                            <div class="column">
+                                                <h2 class="title is-4">Oh no...</h2>
+                                                <p class="subtitle">It seems that there are no results for your request
+                                                    ;=(</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </a>
                             </div>
                         </li>
-                        {% endfor %}
                         <div style="text-align: center">
                             <h2>
                                 <span class="inactive"><i class="fa fa-arrow-left"></i></span>
-                                1 page
-                                <a class="active" href=""><i class="fa fa-arrow-right"></i></a>
+                                Meow
+                                <span class="inactive"><i class="fa fa-arrow-right"></i></span>
                             </h2>
                         </div>
                     </ul>

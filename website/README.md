@@ -4,12 +4,16 @@ Web application written in Rust.
 ## Details:
 Currently backend works with json files of such structure:
 ```
-{
-  "website title": {
+[
+  {
+    "title": "website title",
     "url": "website url",
     "description": "short description"
-  }
-}
+  },
+  .
+  .
+  .
+]
 ```
 
 Webapp uses Rust Rocket framework and Tera templates.
@@ -32,3 +36,5 @@ coming soon
 Here is how main page should look like:
 
 ![main page of the web app (has a cat)](../images/home_page.png)
+![search page of the web app (has a cat)](../images/empty_page.png)
+![error page of the web app (has a cat)](../images/error.png)

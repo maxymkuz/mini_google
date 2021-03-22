@@ -17,16 +17,54 @@
 </header>
 
 <section class="section">
-    <div class="columns is-vcentered is-centered">
-        <div class="column is-2 is-centered">
-            <figure class="image is-128x128">
-                <img class="is-rounded" src="/public/crying_cat.jpg"
-                     alt="Crying Cat">
-            </figure>
+    <div class="columns">
+        <div class="column is-one-quarter">
+
+            <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
+            <ul>
+                <li><a href="/history">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-eye">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Search History
+                        </div>
+                    </div>
+                </a></li>
+                <li><a href="/bookmarks">
+                    <div class="columns">
+                        <div class="column is-1">
+                            <i class="fa fa-bookmark">
+                            </i>
+                        </div>
+                        <div class="column">
+                            Bookmarks
+                        </div>
+                    </div>
+                </a></li>
+            </ul>
         </div>
-        <div class="column is-4">
-            <p class="title is-4">Crying Cat: </p>
-            <p class="title is-4">"{{error}}"</p>
+        <div class="column">
+            <div class="card">
+                <a href="#">
+                    <div class="card-content">
+                        <div class="columns is-vcentered">
+                            <div class="column is-2">
+                                <figure class="image is-128x128">
+                                    <img class="is-rounded" src="/public/crying_cat.jpg"
+                                         alt="Crying Cat">
+                                </figure>
+                            </div>
+                            <div class="column is-4">
+                                <h2 class="title is-4">Oh no...</h2>
+                                <p class="subtitle">{{error}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 </section>

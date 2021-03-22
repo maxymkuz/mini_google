@@ -2,20 +2,25 @@
 
 #[macro_use]
 extern crate rocket;
+// extern crate serde_derive;
+// extern crate serde;
+// extern crate serde_json;
 
 use rocket::http::RawStr;
 use rocket::request::Request;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
 use rocket_contrib::serve::StaticFiles;
-use serde::Serialize;
-// use tera::Context;
-// use rocket::response::content::Json;
+use serde::{Serialize, Deserialize};
+use std::path::Path;
+use std::fs::File;
 
-#[derive(Serialize)]
+// Data structure for json objects
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct Result {
     title: String,
-    path: String,
+    url: String,
     description: String,
 }
 
@@ -30,45 +35,39 @@ fn index() -> Template {
 // TODO: create a template for a case, when there are no search results
 #[get("/search?<user_search>")]
 fn search_page(user_search: &RawStr) -> Template {
+
+    // TODO: here should be language detection
+    // TODO: here should be database connection and request
+
+    // Parsing json results
+    let json_file_path = Path::new("test_data.json");
+    let file = File::open(json_file_path).expect("file not found");
+    let results: Vec<Result> = serde_json::from_reader(file)
+        .expect("error while reading or parsing");
+
     let mut context = HashMap::new();
-    let result1 = Result {
-        title: String::from(String::from(user_search.url_decode().unwrap())+" one"),
-        path: String::from("one path"),
-        description: String::from("one description"),
-    };
-    let result2 = Result {
-        title: String::from(String::from(user_search.url_decode().unwrap())+" two"),
-        path: String::from("two path"),
-        description: String::from("two description"),
-    };let result3 = Result {
-        title: String::from(String::from(user_search.url_decode().unwrap())+" three"),
-        path: String::from("three path"),
-        description: String::from("three description"),
-    };
+    if results.is_empty() {
+       return Template::render("empty_search", &context)
+    }
 
-    let results = [result1, result2, result3];
-    // context.insert("title", String::from(user_search.url_decode().unwrap()));
-    // let mut context = Context::new();
+    // TODO: add pagination
+    // Displaying results on the website page
     context.insert("results", &results);
-    // tera.render("products/product.html", &context)?;
-
     Template::render("search", &context)
 }
 
 // Catching some errors that might occur
-// TODO: 1. create an html template for errors (with cat, of course)
-//       2. serve cats on our server
 #[catch(404)]
 fn not_found(_req: &Request) -> Template {
     let mut context = HashMap::new();
-    context.insert("error", String::from("Oh no! This is not a valid path ;=("));
+    context.insert("error", String::from("This is not a valid path ;=("));
     Template::render("error", &context)
 }
 
 #[catch(400)]
 fn bad_request(_req: &Request) -> Template {
     let mut context = HashMap::new();
-    context.insert("error", String::from("Oh no! A bad request was caught ;=("));
+    context.insert("error", String::from("A bad request was caught ;=("));
     Template::render("error", &context)
 }
 
