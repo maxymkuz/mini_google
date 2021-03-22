@@ -27,6 +27,10 @@ services:
     build: ./rust_crawler/
 
     command: --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
+    volumes:
+          - cargo:/home/rust/.cargo
+          - target:/home/rust/src/target
+
 
   # frontend:
   #   build: ./website/
@@ -51,5 +55,9 @@ services:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"  # port on container->port on host machine
+
 networks:
   frontend:
+volumes:
+  cargo: {}
+  target: {}
