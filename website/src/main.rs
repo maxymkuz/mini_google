@@ -3,7 +3,6 @@
 #[macro_use]
 extern crate rocket;
 
-// use rocket::Request;
 use rocket::config::{Config, Environment};
 use rocket::http::{RawStr, Status};
 use rocket::request::{self, Form, FromRequest, Request};
@@ -11,21 +10,23 @@ use rocket::response::content::Json;
 use rocket::Outcome;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
-// use rocket::request::FromParam;
-// use rocket::http::{Cookie, CookieJar};
-// use async_trait::async_trait;
-// use serde::Serialize;
-
 
 // A.S. It's really weird that you take UserSearch as a necessary argument on the homepage.
 // Isn't it supposed to be an invitation for the user to input the query?
 // I've removed it temporarily, this way you can actually access the homepage
 #[get("/")]
-//fn index(user_search: UserSearch) -> Template {
 fn index() -> Template {
     //println!("Hello, {:?}!", user_search);
     let mut context = HashMap::new();
     context.insert("title", String::from("Jane"));
+
+    Template::render("home", &context)
+}
+
+#[get("/search?<user_search>")]
+fn search_page(user_search: &RawStr) -> Template {
+    let mut context = HashMap::new();
+    context.insert("title", String::from(user_search.url_decode().unwrap()));
 
     Template::render("home", &context)
 }
@@ -50,16 +51,9 @@ fn bad_request(_req: &Request) -> String {
 
 
 fn main() {
-    // let config = Config::build(Environment::Staging)
-    //     .address("1.2.3.4")
-    //     .port(9234)
-    //     .finalize()?;
-    //
-    // let app = rocket::custom(config);
-    // app
     rocket::ignite()
         .register(catchers![not_found])
-        .mount("/", routes![index])
+        .mount("/", routes![index, search_page])
         .mount("/api", routes![hello])
         .attach(Template::fairing())
         .launch();
