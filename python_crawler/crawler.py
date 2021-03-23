@@ -6,71 +6,33 @@ import requests
 import json
 from bs4 import BeautifulSoup
 import sys
+from termcolor import colored
+import queue
 
 
-
-class SafeQueue:
+def get_many(mp_queue, queue, n):
     """
-    Queue class for multiprocess programs
+    Safely gets n items from the queue
+    and inserts them into another one
+    (if there are less items takes all of them)
+    (if there are no items returns False)
     """
-    def __init__(self):
-        self.queue = asyncio.Queue()
-        self.mutex = multiprocessing.Lock()
+    if mp_queue.empty():
+        return False
+    for i in range(n):
+        if mp_queue.empty():
+            break
+        item = mp_queue.get()
+        queue.put_nowait(item)
+    return True
 
-    def get(self):
-        """
-        Safely gets item from the queue
-        """
-        try:
-            self.mutex.acquire()
-            item = self.queue.get_nowait()
-        except asyncio.QueueEmpty:
-            return None
-        finally:
-            self.mutex.release()
-
-        return item
-
-    def put(self, item):
-        """
-        Safely puts item to the queue
-        """
-        try:
-            self.mutex.acquire()
-            self.queue.put_nowait(item)
-        finally:
-            self.mutex.release()
-
-    def empty(self):
-        """
-        Checks if queue is empty
-        """
-        return self.queue.empty()
-
-    def get_many(self, queue, n):
-        """
-        Safely gets n items from the queue
-        and inserts them into another one
-        (if there are less items takes all of them)
-        (if there are no items returns False)
-        """
-        self.mutex.acquire()
-        if self.empty():
-            self.mutex.release()
-            return False
-        for i in range(n):
-            if self.queue.empty():
-                break
-            item = self.queue.get_nowait()
-            queue.put_nowait(item)
-        self.mutex.release()
-        return True
 
 class Item:
     """
     Contains information about item that we won't to
     scrape
     """
+
     def __init__(self, url, time, depth=1):
         self.time = time
         self.cycle = 1
@@ -82,14 +44,14 @@ class Crawler:
     """
     Perfrom asynchronous crawling of given queue of items
     """
-    def __init__(self, queue, max_depth=2, concurrent_tasks=4,  max_queue_size=32, max_cycle=3, delay=2):
+
+    def __init__(self, queue, max_depth=2, concurrent_tasks=4, max_queue_size=32, max_cycle=3, delay=2):
         self.delay = delay
         self.max_depth = max_depth
         self.max_queue_size = max_queue_size
         self.concurrent_tasks = concurrent_tasks
         self.max_cycle = max_cycle
         self.global_queue = queue
-        self.local_queue = None
 
     @staticmethod
     def sort_links(page_url, links):
@@ -113,11 +75,10 @@ class Crawler:
         sorted_links["external_links"] = list(sorted_links["external_links"])
         return sorted_links
 
-
     def get_response(self, url):
         return requests.get(url)
 
-    def parse(self, response, depth):
+    def parse(self, response):
         """
         Parses website data to get text, structured data and links
         """
@@ -130,16 +91,12 @@ class Crawler:
         if elem is not None:
             structured_data = json.loads(elem.contents[0])
 
-        if depth < self.max_depth:
-            links = [element.get("href") for element in parser.find_all("a")]
-        else:
-            links = []
+        links = [element.get("href") for element in parser.find_all("a")]
 
         sorted_links = self.sort_links(response.url, links)
 
         return {'url': response.url, 'text': text, 'structured_data': structured_data,
                 'external_links': sorted_links["external_links"], 'internal_links': sorted_links["internal_links"]}
-
 
     def process_item(self, item):
         """
@@ -156,9 +113,9 @@ class Crawler:
         elif (response.status_code != requests.codes.ok):
             self.back_to_queue(item)
             return
-        data = self.parse(response, item.depth)
+        data = self.parse(response)
 
-        self.send_data(data, item.depth+1)
+        self.send_data(data, item.depth + 1)
 
     def back_to_queue(self, item):
         """
@@ -166,7 +123,7 @@ class Crawler:
         """
         if item.cycle > item.max_cycle:
             return
-        item.time = datetime.now() + timedelta(seconds=self.delay**item.cycle)
+        item.time = datetime.now() + timedelta(seconds=self.delay ** item.cycle)
         item.cycle += 1
         self.global_queue.put(item)
 
@@ -175,19 +132,22 @@ class Crawler:
         Sends data somewhere
         !! TO DO: connect to something
         """
-        for link in data["internal_links"]:
-            self.global_queue.put(Item(link, datetime.now(), depth))
+        if depth <= self.max_depth:
+            for link in data["internal_links"]:
+                self.global_queue.put(Item(link, datetime.now(), depth))
 
     async def process_all(self):
         """
         Processes all items in local the queue
         """
         while True:
-            item = await self.local_queue.get()
-            self.process_item(item)
-            self.local_queue.task_done()
+            try:
+                item = self.global_queue.get(True, 2)
+                self.process_item(item)
+            except queue.Empty:
+                break
 
-    async def crawl_local_queue(self):
+    async def crawl_global_queue(self):
         """
         Asynchronously processes all items in the local queue
         """
@@ -197,30 +157,7 @@ class Crawler:
             task = asyncio.create_task(self.process_all())
             tasks.append(task)
 
-        await self.local_queue.join()
-        for task in tasks:
-            task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
-        print("Crawled one queue")
-
-    async def crawl_global_queue(self):
-        """
-        Asynchronously processes all items in the global queue
-        """
-        prev_empty = False
-        while True:
-            self.local_queue = asyncio.Queue(self.max_queue_size)
-            not_empty = self.global_queue.get_many(self.local_queue, self.max_queue_size)
-            if not not_empty:
-                if prev_empty:
-                    break
-                else:
-                    prev_empty = True
-                    await asyncio.sleep(1)
-            else:
-                prev_empty = False
-            await self.crawl_local_queue()
-
 
 
 def multiprocessing_crawl(queue, max_depth=2, processes=4, concurrent_tasks=4,
@@ -232,11 +169,10 @@ def multiprocessing_crawl(queue, max_depth=2, processes=4, concurrent_tasks=4,
         queue, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
         max_queue_size=max_queue_size, max_cycle=max_cycle,
         delay=delay
-    ) for i in range(processes-1)]
+    ) for i in range(processes - 1)]
     processes = [multiprocessing.Process(target=asyncio.run, args=(item.crawl_global_queue(),)) for item in crawlers]
     for item in processes:
         item.start()
-
 
     asyncio.run(Crawler(
         queue, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
@@ -244,15 +180,15 @@ def multiprocessing_crawl(queue, max_depth=2, processes=4, concurrent_tasks=4,
         delay=delay
     ).crawl_global_queue())
 
+
     for item in processes:
         item.join()
-
 
 
 def main():
     args = sys.argv
     filename = args[1]
-    queue = SafeQueue()
+    queue = multiprocessing.Queue()
     with open(filename) as f:
         for line in f.readlines():
             queue.put(Item(line.strip(), datetime.now()))
