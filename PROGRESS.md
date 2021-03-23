@@ -64,7 +64,7 @@ Rust and we've found a Rust library for language detection it should be fine!)
 and outputting collected structured data in another file. Taking a simple configuration
 with where to look for the files, how many threads to use, how many websites to crawl etc.
 
-- [x] Docker images for crawlers, with minimal dependencies and sizes. Also a simple docker-compose file. Commits above.
+- [x] Docker images for crawlers, with minimal dependencies and sizes. Also a simple docker-compose file.
 
 - [x] Figure out how to work with the database, does it support our languages (currently English and Ukrainian),
 which tables and columns we need etc.

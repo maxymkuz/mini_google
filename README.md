@@ -14,9 +14,6 @@ We are working on multiple components of the web crawler at the same time:
 Each component is intended to run as a separate Docker container, for us
 to be able to freely mix them in different amounts and on different computers/servers.
 
-Example docker containers for [Rust](./rust_docker) and [Python](./python_docker) are also
-temporarily available here.
-
 Progress can be tracked [over here](./PROGRESS.md).
 
 ## Usage:
