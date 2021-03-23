@@ -30,7 +30,13 @@ cargo run
 ```
 With Docker:
 ```
-coming soon
+# Build docker container
+./build.sh
+# Run website on 0.0.0.0:5000
+./run.sh
+
+# When (if) you want to stop:
+./stop.sh
 ```
 
 Here is how main page should look like:

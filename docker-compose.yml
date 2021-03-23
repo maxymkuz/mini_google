@@ -31,11 +31,11 @@ services:
           - cargo:/home/rust/.cargo
           - target:/home/rust/src/target
 
-
-  # frontend:
-  #   build: ./website/
-  #   ports:
-  #     - 5000:5000
+# Takes lots of time to be compiled
+#   website:
+#     build: ./website/
+#     ports:
+#       - 5000:5000
 
   elasticsearch:
     image: "elasticsearch:5"
