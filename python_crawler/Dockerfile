@@ -6,7 +6,7 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "./main.py", "3", "4", "websites.txt"]
+CMD ["python", "websites.txt", "./crawler.py", "2", "4"]
 
 
 

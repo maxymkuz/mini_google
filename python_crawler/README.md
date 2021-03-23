@@ -15,7 +15,7 @@ list of webpages
 ### Usage (without Docker):
 ```bash
 cd python-crawler
-python main.py "max depth" "number of threads" "in file"
+python main.py "in file" "max depth" "number of threads" "concurrent_tasks" "max_queue_size" "max_cycles" "delay"
 ```
 ### Usage (with Docker):
 To build container:

@@ -1,4 +1,4 @@
-beautifulsoup4>=4.7.1
-requests>=2.25
+beautifulsoup4
+requests
 sqlalchemy
 psycopg2

@@ -9,7 +9,7 @@ from datetime import date
 class AbstractCrawler(metaclass=abc.ABCMeta):
     """
     Abstract class for creating different versions
-    of crawlers
+    of old_files
     """
     @abc.abstractmethod
     def scrape(self, url):
@@ -124,7 +124,7 @@ class BSCrawler(AbstractCrawler):
 
 class CrawlersManager:
     """
-    Class that contains many crawlers that
+    Class that contains many old_files that
     can be launched on multiple threads
     """
 
