@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
-use serde_json::json;
+// use serde_json::{Error};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
@@ -20,11 +20,26 @@ struct Website {
 }
 
 
-fn main() {
-    file_to_db();
+// Converts a website struct to json, and sends it to DB(NOT IMPLEMENTED)
+fn struct_to_json_and_send(website: &Website) -> Result<()> {
+    // create a string representation of json
+    let website_json:String = serde_json::to_string(&website)?;
+    println!("{}", website_json);
+
+    // HERE, WE ARE READY TO SEND THIS JSON TO DB
+    // TODO add db support
+
+    Ok(())
 }
 
-// Function that parses file line by line, and adds url and text to database(DB NOT IMPLEMENTED YET)
+
+// deserializes json, for frontend usage
+fn json_to_struct(json_str: &str) -> Result<&Website>{
+    serde_json::from_str(&json_str)?
+}
+
+
+// Function that parses file line by line, and adds url, text and language to database(DB IS NOT IMPLEMENTED YET)
 #[tokio::main]
 async fn file_to_db() {
 
@@ -52,16 +67,11 @@ async fn file_to_db() {
                     // saving only a dominant language(with the highest probability) to struct
                     website.language = languages[0].0.to_owned();
 
-                    // Creating a json to push to database
-                    let website_json = json!({
-                        "url": website.url,
-                        "text": website.text,
-                        "language": website.language
-                    });
-
-                    println!("{}", website_json.to_string());
-
-                    // HERE, WE ARE READY TO SEND THIS JSON TO DB
+                    // Creating a json and pushing to database:
+                    match serialize_and_send(&website) {
+                        Ok(s) => {},
+                        Err(e) => println!("{}", e),
+                    }
                 }
             }
         }
@@ -74,4 +84,9 @@ fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
     where P: AsRef<Path>, {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
+}
+
+
+fn main() {
+    file_to_db();
 }
