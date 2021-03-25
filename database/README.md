@@ -1,7 +1,16 @@
 This is a WIP database directory. We are figuring out how to transfer from a PostgreSQL database
 to an Elasticsearch one.
 
-## Instructions
+This Rust module should currently be able of populating the database with crawler's
+results and giving back backend's search queries.
+
+**Left to figure out:**
+* Connect this to the lang detect backend
+* Connect this to the crawler
+* Connect this to the search backend
+* Figure out all the Docker stuff
+
+## Instructions for local Docker-less deployment
 
 ```
 # Install elasticsearch using your system's package manager
@@ -19,8 +28,5 @@ systemctl enable elasticsearch.service
 curl http://127.0.0.1:9200
 ```
 
-Kill yourself
-And then proceed with testing this Rust module.
-Currently it should create an index, and if it is successful or if the index
-already exists, just push an example json in there and later try to fetch whether 
-the index was successfully populated. or smth like that.
+You can also read [on this relationship between SQL concepts and
+Elasticsearch respective ones](https://www.elastic.co/blog/what-is-an-elasticsearch-index).
