@@ -3,12 +3,14 @@ use std::{fs::File, io::BufReader};
 use std::{io::BufRead, time::Duration};
 // use serde_json::{Error};
 use serde::{Deserialize, Serialize};
+use elasticsearch::Elasticsearch;
+use serde_json::Value;
 
 // Module that currently is supposed to read data from file, and push it to database somehow (NOT IMPLEMENTED YET)
 // Later, this will be fully-functional backend for crawlers to identify the language and talk to db
 
-mod database;
-mod lang_detect; // MODULE THAT TALKS TO PYTHON LANGDETECT // MODULE THAT HANDLES THE ACTUAL DATABASE QUERIES
+mod database; // MODULE THAT HANDLES THE ACTUAL DATABASE QUERIES
+mod lang_detect; // MODULE THAT TALKS TO PYTHON LANGDETECT
 
 // Struct to better represent a single Website as json. It has a primitive for now.
 // FOR FUTURE: add vector of websites, vector of different languages?, and their probabilities
@@ -17,18 +19,72 @@ struct CrawledWebsite {
     url: String,
     full_text: String,
     language: String,
-    urls: Vec<String>,
+    // urls: Vec<String>, // uncomment later
 }
+
+// we will use this func later in crawlers, so it has to be separate. Possibly make lang detection here later
+#[tokio::main]
+async fn struct_to_db(website: &CrawledWebsite, client: &Elasticsearch) -> Result<(), Box<dyn std::error::Error>> {
+
+    // We do not care about language detection (for now)
+    // TODO: Implement proper language detection, error handling here etc.
+    //let languages: Vec<(String, f64)> =
+    //lang_detect::send_lang_detection_query(&website.text)
+    //.await
+    //.unwrap();
+    // saving only a dominant language(with the highest probability) to struct
+    //language = languages[0].0.to_owned();
+
+    // Sending the crawled website to the database
+    // Retrying if something went wrong until we get it done
+    loop {
+        let response =
+            database::send_scrapped_website(&client, serde_json::json!(website))
+                .await?;
+
+        // Creating a json and pushing to database:
+        match response.status_code() {
+            StatusCode::OK => break,
+            _ => continue,
+        }
+    }
+    Ok(())
+}
+
+//  Andrew Розкоментуй і пофікси лайфтайми
+// // Func to get a response from db, according to user querry
+// #[tokio::main]
+// async fn get_response<'a>(query: &'a str, client: &'a Elasticsearch) -> Result<Vec<&'a Value>, Box<dyn std::error::Error>> { // Andriy глянь за лайфтайми
+//     // Search example query
+//     // We are looking in the column 'fulltext' for certain text pattern
+//     let search_query = serde_json::json!({
+//         "query": {
+//             "match": {
+//                 "language": query.to_string()
+//             }
+//         }
+//     });
+//     let search_result  = database::get_search(&client, search_query).await?;
+//     let result = database::parse_search(&search_result);
+//     println!("{:?}", result.len());
+//     Ok(result.clone())
+// }
+
 
 // Function that parses file line by line, and inserts url, text and language to the database
 // This is basically a mock for the request from a crawler until we figure that out
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// #[tokio::main]
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Creating future json
-    let mut url = String::new();
-    let mut full_text = String::new();
-    let language = "english";
-    let mut urls: Vec<String> = Vec::new();
+    // let mut url = String::new();
+    // let mut full_text = String::new();
+    // let language = "en";
+    // let mut urls: Vec<String> = Vec::new();
+    let mut website = CrawledWebsite {
+        url: "sample_url".to_string(),
+        full_text: "sample_text".to_string(),
+        language: "sample_lan".to_string(),
+    };
 
     // Establish a database connection
     let client = database::establish_database_connection();
@@ -44,43 +100,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // First link=this page url. All subsequent ones are urls this page links to
                 let mut link_vector = line.split(' ');
 
-                url = link_vector.next().unwrap().to_string();
-                urls = link_vector.map(|x| x.to_string()).collect();
+                website.url = link_vector.next().unwrap().to_string();
+                // urls = link_vector.map(|x| x.to_string()).collect();
             }
             if index % 3 == 1 {
                 // Getting the full text of the website
-                full_text = line.to_string();
+                website.full_text = line.to_string();
 
-                // We do not care about language detection (for now)
-                // TODO: Implement proper language detection, error handling here etc.
-                //let languages: Vec<(String, f64)> =
-                //lang_detect::send_lang_detection_query(&website.text)
-                //.await
-                //.unwrap();
-                // saving only a dominant language(with the highest probability) to struct
-                //language = languages[0].0.to_owned();
 
-                // Creating the struct to send along to the database
-                let website = CrawledWebsite {
-                    url: url.to_string(),
-                    full_text,
-                    language: language.to_string(),
-                    urls: urls.clone(),
-                };
-
-                // Sending the crawled website to the database
-                // Retrying if something went wrong until we get it done
-                loop {
-                    let response =
-                        database::send_scrapped_website(&client, serde_json::json!(website))
-                            .await?;
-
-                    // Creating a json and pushing to database:
-                    match response.status_code() {
-                        StatusCode::OK => break,
-                        _ => continue,
-                    }
-                }
+                // Sending the data stored in struct website to database
+                struct_to_db(&website, &client)?; // Andriy handle
             }
         }
     }
@@ -92,18 +121,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // longer........
     std::thread::sleep(Duration::from_millis(10000));
 
-    // Search example query
-    // We are looking in the column 'fulltext' for certain text pattern
-    let search_query = serde_json::json!({
-        "query": {
-            "match": {
-                "language": "english"
-            }
-        }
-    });
-    let search_result = database::get_search(&client, search_query).await?;
-    let result = database::parse_search(&search_result);
-    println!("{:?}", result.len());
-
+    // get_response("en", &client);  //  Andrew Розкоментуй і пофікси лайфтайми
     Ok(())
 }
