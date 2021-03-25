@@ -8,7 +8,7 @@
 
 ## Week 5
 
-- [ ] Research Elasticsearch (huh) and figure out the schema, the queries we will
+- [x] Research Elasticsearch (huh) and figure out the schema, the queries we will
 have to send both from the crawling and from the backend sides.
 
 - [ ] Look into whether we can transfer HTML parsing to Elasticsearch from crawlers.
