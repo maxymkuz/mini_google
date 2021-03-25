@@ -1,3 +1,5 @@
+//! Module that currently is supposed to read data from file, and push it to database.
+//! Later, this will be fully-functional backend for crawlers to identify the language and talk to db
 use elasticsearch::Elasticsearch;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -5,25 +7,20 @@ use serde_json::Value;
 use std::io::BufRead;
 use std::{fs::File, io::BufReader};
 
-// Module that currently is supposed to read data from file, and push it to database somehow (NOT IMPLEMENTED YET)
-// Later, this will be fully-functional backend for crawlers to identify the language and talk to db
-
 mod database; // MODULE THAT HANDLES THE ACTUAL DATABASE QUERIES
 mod lang_detect; // MODULE THAT TALKS TO PYTHON LANGDETECT
-mod web_listener;
+mod web_listener; // MODULE THAT LAUNCHES THE WEB SERVER AND LISTENS TO WEB BACKEND AND CRAWLER QUERIES
 
-// Struct to better represent a single Website as json. It's primitive for now
-// FOR FUTURE: add vector of websites, vector of different languages?, and their probabilities
+// TODO: add vector of websites, vector of different languages?, and their probabilities
 #[derive(Serialize, Deserialize)]
 struct CrawledWebsite {
     url: String,
     full_text: String,
     language: String,
-    // urls: Vec<String>, // uncomment later
+    // urls: Vec<String>, // TODO: uncomment later when we will implement it too
 }
 
 // we will use this func later in crawlers, so it has to be separate. Possibly make lang detection here later
-#[tokio::main]
 async fn struct_to_db(
     website: &CrawledWebsite,
     client: &Elasticsearch,
@@ -51,34 +48,30 @@ async fn struct_to_db(
     Ok(())
 }
 
-//  Andrew Розкоментуй і пофікси лайфтайми
-// // Func to get a response from db, according to user querry
-// #[tokio::main]
-// async fn get_response<'a>(query: &'a str, client: &'a Elasticsearch) -> Result<Vec<&'a Value>, Box<dyn std::error::Error>> { // Andriy глянь за лайфтайми
-//     // Search example query
-//     // We are looking in the column 'fulltext' for certain text pattern
-//     let search_query = serde_json::json!({
-//         "query": {
-//             "match": {
-//                 "language": query.to_string()
-//             }
-//         }
-//     });
-//     let search_result  = database::get_search(&client, search_query).await?;
-//     let result = database::parse_search(&search_result);
-//     println!("{:?}", result.len());
-//     Ok(result.clone())
-// }
+// Func to get a response from db, according to user query
+async fn get_response<'a>(
+    client: &'a Elasticsearch,
+    query: &'a str,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    // Search example query
+    // We are looking in the column 'full_text' for certain text pattern
+    let search_query = serde_json::json!({
+        "query": {
+            "match": {
+                "full_text": query.to_string()
+            }
+        }
+    });
+    let search_result = database::get_search(&client, search_query).await?;
+    Ok(search_result)
+}
 
 // Function that parses file line by line, and inserts url, text and language to the database
 // This is basically a mock for the request from a crawler until we figure that out
-// #[tokio::main]
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+// It also launches the web listener that's handling crawlers and backend requests.
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Creating future json
-    // let mut url = String::new();
-    // let mut full_text = String::new();
-    // let language = "en";
-    // let mut urls: Vec<String> = Vec::new();
     let mut website = CrawledWebsite {
         url: "sample_url".to_string(),
         full_text: "sample_text".to_string(),
@@ -107,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 website.full_text = line.to_string();
 
                 // Sending the data stored in struct website to database
-                struct_to_db(&website, &client)?; // Andriy handle
+                struct_to_db(&website, &client).await?;
             }
         }
     }
@@ -119,21 +112,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // longer........
     //std::thread::sleep(std::time::Duration::from_millis(10000));
 
-    // get_response("en", &client);  //  Andrew Розкоментуй і пофікси лайфтайми
-    // Search example query
-    // We are looking in the column 'fulltext' for certain text pattern
-    let search_query = serde_json::json!({
-        "query": {
-            "match": {
-                "language": "english"
-            }
-        }
-    });
-    let search_result = database::get_search(&client, search_query).await?;
-    let result = database::parse_search(&search_result);
+    // Just an example launch
+    let result = get_response(&client, "word").await?;
     println!("{:?}", result.len());
 
-    web_listener::launch_server();
+    // Launching the web server that's going to listen to requests from the web backend and
+    // crawlers. Currently only the backend queries are implemented.
+    web_listener::launch_server().unwrap();
 
     Ok(())
 }

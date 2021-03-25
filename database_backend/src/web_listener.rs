@@ -1,31 +1,27 @@
-use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use serde::{Deserialize, Serialize};
 
 use crate::database;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SearchQuery {
-    query: String,
+    text: String,
 }
 
-#[get("/search")]
+/// The search callback thingy
 async fn search(
-    client: web::Data<&database::Elasticsearch>,
+    client: web::Data<database::Elasticsearch>,
     query: web::Json<SearchQuery>,
 ) -> HttpResponse {
     // Try to query the database, if everything goes well, return the json, if not, return 409
-    let search_result = match database::get_search(
-        &client,
-        serde_json::json!({"query": {"match": {"full_text": query.query }}}),
-    )
-    .await
-    {
+    let search_result = match crate::get_response(&client, &query.text).await {
         Ok(x) => x,
         Err(_) => return HttpResponse::Conflict().finish(),
     };
     HttpResponse::Ok().json(search_result)
 }
 
+/// Launches the web server that listens for crawlers inserts and web backend queries
 #[actix_web::main]
 pub async fn launch_server() -> std::io::Result<()> {
     // Set up logger
@@ -33,19 +29,10 @@ pub async fn launch_server() -> std::io::Result<()> {
     env_logger::init();
 
     // Launch the server
-    // TODO: I HAVE NO FUCKING IDEA WHY THIS FUKCING SHIT DOESNT COMPILE I LITERALLY ALMOST COPIED
-    // THIS FROM THE EXAMPLES I HATE THIS SHIT I DO NOT HAVE ANY MORE FUKCING PATIENCE FOR THESE
-    // STUPID LIBRARIES I HATE ELASTICSEARCH I HATE ACTIX I HATE ROCKET WHY CAN'T YOU JUST BE
-    // FUCKINFG CONSISTENT AND LOGICAL AND I DON'T KNOW LIKE FUCKING PROVIDE VALID EXAMPLES YOU
-    // FUCKING BITCHES . WHAT DOES TRAIT FACTORY<_____> NOT IMPLEMENTED MY ASS FUCKING MEAN WTF IS
-    // THIS FUCKING LOAD OF FUCKING SHIT.
-    //
-    // If you have any deeper understanding of why this problem might occur plz help me out I've
-    // been staring at ElasticSearch documentatin all day and my brain is non-existent.
     HttpServer::new(move || {
         let client = database::Elasticsearch::default();
         App::new()
-            .data(&client)
+            .data(client.clone())
             .wrap(middleware::Logger::default())
             .data(web::JsonConfig::default().limit(4096))
             .service(web::resource("/search").route(web::post().to(search)))
