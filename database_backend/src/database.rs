@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use elasticsearch::{
+pub use elasticsearch::{
     http::{response::Response, StatusCode},
     Elasticsearch, IndexParts, SearchParts,
 };

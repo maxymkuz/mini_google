@@ -1,18 +1,18 @@
-use reqwest::StatusCode;
-use std::{fs::File, io::BufReader};
-use std::{io::BufRead, time::Duration};
-// use serde_json::{Error};
-use serde::{Deserialize, Serialize};
 use elasticsearch::Elasticsearch;
+use reqwest::StatusCode;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::io::BufRead;
+use std::{fs::File, io::BufReader};
 
 // Module that currently is supposed to read data from file, and push it to database somehow (NOT IMPLEMENTED YET)
 // Later, this will be fully-functional backend for crawlers to identify the language and talk to db
 
 mod database; // MODULE THAT HANDLES THE ACTUAL DATABASE QUERIES
 mod lang_detect; // MODULE THAT TALKS TO PYTHON LANGDETECT
+mod web_listener;
 
-// Struct to better represent a single Website as json. It has a primitive for now.
+// Struct to better represent a single Website as json. It's primitive for now
 // FOR FUTURE: add vector of websites, vector of different languages?, and their probabilities
 #[derive(Serialize, Deserialize)]
 struct CrawledWebsite {
@@ -24,8 +24,10 @@ struct CrawledWebsite {
 
 // we will use this func later in crawlers, so it has to be separate. Possibly make lang detection here later
 #[tokio::main]
-async fn struct_to_db(website: &CrawledWebsite, client: &Elasticsearch) -> Result<(), Box<dyn std::error::Error>> {
-
+async fn struct_to_db(
+    website: &CrawledWebsite,
+    client: &Elasticsearch,
+) -> Result<(), Box<dyn std::error::Error>> {
     // We do not care about language detection (for now)
     // TODO: Implement proper language detection, error handling here etc.
     //let languages: Vec<(String, f64)> =
@@ -38,9 +40,7 @@ async fn struct_to_db(website: &CrawledWebsite, client: &Elasticsearch) -> Resul
     // Sending the crawled website to the database
     // Retrying if something went wrong until we get it done
     loop {
-        let response =
-            database::send_scrapped_website(&client, serde_json::json!(website))
-                .await?;
+        let response = database::send_scrapped_website(&client, serde_json::json!(website)).await?;
 
         // Creating a json and pushing to database:
         match response.status_code() {
@@ -69,7 +69,6 @@ async fn struct_to_db(website: &CrawledWebsite, client: &Elasticsearch) -> Resul
 //     println!("{:?}", result.len());
 //     Ok(result.clone())
 // }
-
 
 // Function that parses file line by line, and inserts url, text and language to the database
 // This is basically a mock for the request from a crawler until we figure that out
@@ -107,7 +106,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Getting the full text of the website
                 website.full_text = line.to_string();
 
-
                 // Sending the data stored in struct website to database
                 struct_to_db(&website, &client)?; // Andriy handle
             }
@@ -119,8 +117,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // I am not sure what the problem is, but it seems to be indexing the actual fulltext for a bit
     // longer........
-    std::thread::sleep(Duration::from_millis(10000));
+    //std::thread::sleep(std::time::Duration::from_millis(10000));
 
     // get_response("en", &client);  //  Andrew Розкоментуй і пофікси лайфтайми
+    // Search example query
+    // We are looking in the column 'fulltext' for certain text pattern
+    let search_query = serde_json::json!({
+        "query": {
+            "match": {
+                "language": "english"
+            }
+        }
+    });
+    let search_result = database::get_search(&client, search_query).await?;
+    let result = database::parse_search(&search_result);
+    println!("{:?}", result.len());
+
+    web_listener::launch_server();
+
     Ok(())
 }
