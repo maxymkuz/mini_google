@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 
 /// Create an index. Returns 200 if it did create an index and 409 if the index was already
 /// there.
-async fn send_scrapped_website(
+pub async fn send_scrapped_website(
     client: &Elasticsearch,
     body: Value,
 ) -> Result<Response, Box<dyn std::error::Error>> {
@@ -23,10 +23,10 @@ async fn send_scrapped_website(
 /// Searches the index for a "text" string. You can also search in "url" columns etc.
 /// This returns top 10 results starting from the 0th one. Change this for your backend queries
 /// if you need to.
-async fn get_search(
+pub async fn get_search(
     client: &Elasticsearch,
     body: Value,
-) -> Result<Response, Box<dyn std::error::Error>> {
+) -> Result<Value, Box<dyn std::error::Error>> {
     let response = client
         .search(SearchParts::Index(&["english"]))
         .from(0)
@@ -34,11 +34,27 @@ async fn get_search(
         .body(body)
         .send()
         .await?;
+    let response = response.json::<Value>().await?;
     Ok(response)
 }
 
+pub fn parse_search(response_body: &Value) -> Vec<&Value> {
+    let hits: Vec<&Value> = response_body["hits"]["hits"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| &x["_source"])
+        .collect();
+    hits
+}
+
+pub fn establish_database_connection() -> Elasticsearch {
+    let client = Elasticsearch::default();
+    client
+}
+
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn example() -> Result<(), Box<dyn std::error::Error>> {
     // Creating a stupid elasticsearch client and putting a json in there. Not sure if works 100%
     // It's not that elasticsearch is stupid it's just that we should create an asynchronous
     // connection pool instead
@@ -70,19 +86,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let search_result = get_search(&client, search_query).await?;
 
-    // Parse out the response, turn all the hits into an array
-    let response_body = search_result.json::<Value>().await?;
-    let hits: Vec<&Value> = response_body["hits"]["hits"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|x| &x["_source"])
-        .collect();
-
     // Prints out the resulting search hits as an array like this:
     // [Object({"fulltext": String("exampletext with a mention of ukraine"),
     // "url": String("site.com"), "urls": Array([String("url1"), String("url2")])})]
-    println!("{:?}", hits);
+    println!("{:?}", parse_search(&search_result));
 
     Ok(())
 }
