@@ -1,6 +1,3 @@
-# WORK IN PROGRESS ON THIS
-# THIS STILL DOES NOT CACHE BUILDS
-
 # Build stage
 FROM ekidd/rust-musl-builder:latest AS builder
 
@@ -11,10 +8,11 @@ RUN cargo build --release
 FROM scratch
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY urls.txt urls.txt
+COPY data/100_lines_collected_data.txt data.txt
 
 COPY --from=builder \
-    /home/rust/src/target/x86_64-unknown-linux-musl/release/rust-crawler \
+    /home/rust/src/target/x86_64-unknown-linux-musl/release/database_backend \
     /usr/local/bin/
 
-ENTRYPOINT ["/usr/local/bin/rust-crawler"]
+EXPOSE 8080/tcp
+ENTRYPOINT ["/usr/local/bin/database_backend"]

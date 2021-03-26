@@ -71,6 +71,9 @@ async fn get_response<'a>(
 // It also launches the web listener that's handling crawlers and backend requests.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let filename = std::env::args()
+        .nth(1)
+        .unwrap_or("./data/100_lines_collected_data.txt".to_string());
     // Creating future json
     let mut website = CrawledWebsite {
         url: "sample_url".to_string(),
@@ -81,8 +84,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Establish a database connection
     let client = database::establish_database_connection();
 
+    // Wait so that Elasticsearch will have time to index all of this. This is just so you'd be
+    // able to get a valid result down below.
+    //
+    // I am not sure what the problem is, but it seems to be indexing the actual fulltext for a bit
+    // longer........
+    std::thread::sleep(std::time::Duration::from_millis(5000));
+
     // Reading from pre-made file with data line by line
-    let input = File::open("./data/100_lines_collected_data.txt")?;
+    let input = File::open(filename)?;
     let buffered = BufReader::new(input);
 
     for (index, line) in buffered.lines().enumerate() {
@@ -105,16 +115,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Wait so that Elasticsearch will have time to index all of this. This is just so you'd be
-    // able to get a valid result down below.
-    //
-    // I am not sure what the problem is, but it seems to be indexing the actual fulltext for a bit
-    // longer........
-    //std::thread::sleep(std::time::Duration::from_millis(10000));
+    println!("Put the file in the database");
 
     // Just an example launch
-    let result = get_response(&client, "word").await?;
-    println!("{:?}", result.len());
+    //let result = get_response(&client, "word").await?;
+    //println!("{:?}", result.len());
 
     // Launching the web server that's going to listen to requests from the web backend and
     // crawlers. Currently only the backend queries are implemented.

@@ -1,5 +1,5 @@
 pub use elasticsearch::{
-    http::{response::Response, StatusCode},
+    http::{response::Response, transport::Transport, StatusCode},
     Elasticsearch, IndexParts, SearchParts,
 };
 use serde_json::Value;
@@ -7,8 +7,21 @@ use serde_json::Value;
 /// Establishes a database connection. Should be called by a thread before doing anything else
 /// with the database.
 pub fn establish_database_connection() -> Elasticsearch {
-    let client = Elasticsearch::default();
-    client
+    // TODO: Implement a smarter retry system
+    loop {
+        match Transport::single_node("http://localhost:9200") {
+            Ok(transport) => {
+                let client = Elasticsearch::new(transport);
+                println!("Successfuly connected to the database, yay!");
+                return client;
+            }
+            Err(_) => {
+                println!("Failed to connect to the database, retrying in 500 msec");
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                continue;
+            }
+        }
+    }
 }
 
 /// Create an index. Returns 200 if it did create an index and 409 if the index was already
