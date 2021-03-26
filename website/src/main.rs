@@ -6,14 +6,14 @@ extern crate rocket;
 // extern crate serde;
 // extern crate serde_json;
 
-use rocket::http::RawStr;
-use rocket::request::Request;
-use rocket_contrib::templates::Template;
-use std::collections::HashMap;
+use reqwest::blocking::Client;
+use rocket::{http::RawStr, request::Request, State};
 use rocket_contrib::serve::StaticFiles;
-use serde::{Serialize, Deserialize};
-use std::path::Path;
+use rocket_contrib::templates::Template;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::File;
+use std::path::Path;
 
 // Data structure for json objects
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,33 +27,52 @@ struct Result {
 // Homepage of the website
 #[get("/")]
 fn index() -> Template {
-    let context: HashMap<&str, String> = HashMap::new();
+    let context: Vec<HashMap<String, String>> = vec![];
     Template::render("home", &context)
 }
 
 // Page, generated after user searches for something
 // TODO: create a template for a case, when there are no search results
 #[get("/search?<user_search>")]
-fn search_page(user_search: &RawStr) -> Template {
-
+fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: here should be language detection
-    // TODO: here should be database connection and request
+    let json_to_send = user_search;
+
+    // Create an empty context
+    let context: Vec<HashMap<String, String>> = vec![];
+
+    // Send a request to the database backend (currently running locally)
+    // If something goes wrong, we just return an empty template
+    let results = match client
+        .post("http://127.0.0.1:8080")
+        .json(&json_to_send)
+        .send()
+    {
+        Ok(x) => x,
+        Err(_) => return Template::render("empty_search", &context),
+    };
+
+    let results: Vec<HashMap<String, String>> = match results.json() {
+        Ok(x) => x,
+        Err(_) => return Template::render("empty_search", &context),
+    };
 
     // Parsing json results
-    let json_file_path = Path::new("test_data.json");
-    let file = File::open(json_file_path).expect("file not found");
-    let results: Vec<Result> = serde_json::from_reader(file)
-        .expect("error while reading or parsing");
+    //let json_file_path = Path::new("test_data.json");
+    //let file = File::open(json_file_path).expect("file not found");
+    //let results: Vec<Result> = serde_json::from_reader(file)
+    //.expect("error while reading or parsing");
+    println!("{:?}", results);
 
-    let mut context = HashMap::new();
-    if results.is_empty() {
-       return Template::render("empty_search", &context)
-    }
+    //let mut context = HashMap::new();
+    //if results.is_empty() {
+    //return Template::render("empty_search", &context);
+    //}
 
     // TODO: add pagination
     // Displaying results on the website page
-    context.insert("results", &results);
-    Template::render("search", &context)
+    //context.insert("resuits", &results);
+    Template::render("search", &results)
 }
 
 // Catching some errors that might occur
@@ -71,12 +90,18 @@ fn bad_request(_req: &Request) -> Template {
     Template::render("error", &context)
 }
 
-
 fn main() {
+    // Initializing a reqwest client for calls to the database backend
+    let client = Client::new();
+
     rocket::ignite()
+        .manage(client)
         .register(catchers![not_found, bad_request])
         .mount("/", routes![index, search_page])
-        .mount("/public", StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")))
+        .mount(
+            "/public",
+            StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")),
+        )
         .attach(Template::fairing())
         .launch();
 }
