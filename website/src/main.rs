@@ -39,7 +39,7 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     let json_to_send = user_search;
 
     // Create an empty context
-    let context: Vec<HashMap<String, String>> = vec![];
+    let mut context = HashMap::new();
 
     // Send a request to the database backend (currently running locally)
     // If something goes wrong, we just return an empty template
@@ -57,21 +57,14 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
         Err(_) => return Template::render("empty_search", &context),
     };
 
-    // Parsing json results
-    //let json_file_path = Path::new("test_data.json");
-    //let file = File::open(json_file_path).expect("file not found");
-    //let results: Vec<Result> = serde_json::from_reader(file)
-    //.expect("error while reading or parsing");
-    println!("{:?}", results);
-
-    //let mut context = HashMap::new();
-    //if results.is_empty() {
-    //return Template::render("empty_search", &context);
-    //}
-
+    // let mut test1 = HashMap::new();
+    // test1.insert("description", "bla bla");
+    // test1.insert("url", "url ... bla bla");
+    // let mut test_results = Vec::new();
+    // test_results.insert(0, test1);
     // TODO: add pagination
     // Displaying results on the website page
-    //context.insert("resuits", &results);
+    context.insert("results", &results);
     Template::render("search", &results)
 }
 
@@ -105,3 +98,4 @@ fn main() {
         .attach(Template::fairing())
         .launch();
 }
+

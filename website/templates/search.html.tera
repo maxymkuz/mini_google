@@ -76,7 +76,7 @@
                             <div class="card">
                                 <a href="{{result.url}}">
                                     <div class="card-content">
-                                        <h2 class="title is-4">{{result.title}}</h2>
+                                        <h2 class="title is-4">Here will be the title of the page...</h2>
                                         <p class="subtitle">{{result.url}}</p>
                                         <p class="subtitle">{{result.description}}</p>
                                     </div>
