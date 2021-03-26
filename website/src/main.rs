@@ -7,13 +7,11 @@ extern crate rocket;
 // extern crate serde_json;
 
 use reqwest::blocking::Client;
-use rocket::{http::RawStr, request::Request, State};
+use rocket::{request::Request, State};
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::File;
-use std::path::Path;
 
 // Data structure for json objects
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,7 +35,7 @@ fn index() -> Template {
 fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: here should be language detection
     let mut json_to_send = HashMap::new();
-    json_to_send.insert("text", user_search);
+    json_to_send.insert("text", &user_search);
 
     // Create an empty context
     let mut context = HashMap::new();
@@ -59,12 +57,19 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     };
 
     // let mut test1 = HashMap::new();
-    // test1.insert("description", "bla bla");
-    // test1.insert("url", "url ... bla bla");
+    // test1.insert(String::from("title"), String::from("AAAaaaaAAAAAA"));
+    // test1.insert(String::from("description"), String::from("bla bla"));
+    // test1.insert(String::from("url"), String::from("url ... bla bla"));
     // let mut test_results = Vec::new();
     // test_results.insert(0, test1);
+
+    let mut additional_data = HashMap::new();
+    additional_data.insert(String::from("query"), user_search);
+    let mut vector_additional_data = Vec::new();
+    vector_additional_data.insert(0, additional_data);
     // TODO: add pagination
     // Displaying results on the website page
+    context.insert("additional_data", &vector_additional_data);
     context.insert("results", &results);
     Template::render("search", &context)
 }
