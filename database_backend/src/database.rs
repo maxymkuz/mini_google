@@ -9,7 +9,7 @@ use serde_json::Value;
 pub fn establish_database_connection() -> Elasticsearch {
     // TODO: Implement a smarter retry system
     loop {
-        match Transport::single_node("http://localhost:9200") {
+        match Transport::single_node("postgres://elasticsearch:9200") {
             Ok(transport) => {
                 let client = Elasticsearch::new(transport);
                 println!("Successfuly connected to the database, yay!");

@@ -2,8 +2,8 @@ version: "3.8"
 services:
     elasticsearch:
       image: "elasticsearch:5"
-      networks:
-        - frontend # set up a network that we can use across different containers
+      #networks:
+        #- frontend # set up a network that we can use across different containers
       restart: always
       healthcheck:  # to prevent apps from quering inexisting database
         test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
@@ -61,8 +61,8 @@ services:
     database_backend:
       build: ./database_backend/
       command: data.txt
-      networks:
-        - frontend # set up a network that we can use across different containers
+      #networks:
+        #- frontend # set up a network that we can use across different containers
       environment:
         - RUST_BACKTRACE=1
       ports: 
@@ -72,8 +72,8 @@ services:
           condition: service_healthy
 
    
-networks:
-  frontend:
+#networks:
+  #frontend:
 volumes:
   cargo: {}
   target: {}
