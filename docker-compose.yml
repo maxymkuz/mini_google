@@ -1,79 +1,86 @@
 version: "3.8"
 services:
-    elasticsearch:
-      image: "elasticsearch:5"
-      #networks:
-        #- frontend # set up a network that we can use across different containers
-      restart: always
-      healthcheck:  # to prevent apps from quering inexisting database
-        test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-        interval: 5s
-        timeout: 5s
-        retries: 10
-      volumes:
-        - ./ES_DATA:/usr/share/elasticsearch/data  # where we will store indexed data
-      environment:
-        - discovery.type=single-node # don't pay attention to these
-        - bootstrap.memory_lock=true
-        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      ports:
-        - "9200:9200"  # port on container->port on host machine
-
-    # lang_detect_python:
-    #   build: ./lang_detect_python/
-    #   volumes: 
-    #     - ./lang_detect_python/:/usr/src/app/
-    #   ports: 
-    #     - 5001:5001
-    #   environment: 
-    #     PORT: 5001
-    #     FLASK_DEBUG: 1
-      # restart: always
-      #depends_on:
-        #elasticsearch:
-          #condition: service_healthy
-
-    # python_app:
-    #   build: ./python_app/
-      #depends_on:
-        #elasticsearch:
-          #condition: service_healthy
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+  python_app:
+   build: ./python_app/
+   volumes:
+     - ./python_app/:/usr/src/app/
+   ports:
+     - 5001:5001
+   depends_on:
+     - elasticsearch
 
 
-    #rust_crawler:
-    #build: ./rust_crawler/
-    #command: --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
-    #volumes:
-          #- cargo:/home/rust/.cargo
-          #- target:/home/rust/src/target
-      #depends_on:
-        #elasticsearch:
-          #condition: service_healthy
-
-    website:
-     build: ./website/
-     ports:
-       - 5000:5000
-     depends_on:
-       elasticsearch:
-         condition: service_healthy
-
-    database_backend:
-      build: ./database_backend/
-      command: data.txt
-      #networks:
-        #- frontend # set up a network that we can use across different containers
-      environment:
-        - RUST_BACKTRACE=1
-      ports: 
-       - 8080:8080
-      depends_on:
-        elasticsearch:
-          condition: service_healthy
-
-   
-#networks:
-  #frontend:
 volumes:
   cargo: {}
   target: {}
+  elasticsearch-data:
+    driver: local
+
+#     lang_detect_python:
+#       build: ./lang_detect_python/
+#       volumes:
+#         - ./lang_detect_python/:/usr/src/app/
+#       ports:
+#         - 5001:5001
+#       environment:
+#         PORT: 5001
+#         FLASK_DEBUG: 1
+#       restart: always
+#
+#     python_app:
+#       build: ./python_app/
+#      depends_on:
+#        elasticsearch:
+#          condition: service_healthy
+#
+#
+#    rust_crawler:
+#    build: ./rust_crawler/
+#    command: --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
+#    volumes:
+#          - cargo:/home/rust/.cargo
+#          - target:/home/rust/src/target
+#      depends_on:
+#        elasticsearch:
+#          condition: service_healthy
+#
+#    website:
+#     build: ./website/
+#     ports:
+#       - 5000:5000
+#     depends_on:
+#       elasticsearch:
+#         condition: service_healthy
+#
+#    database_backend:
+#      build: ./database_backend/
+#      command: data.txt
+#      #networks:
+#        #- frontend # set up a network that we can use across different containers
+#      environment:
+#        - RUST_BACKTRACE=1
+#      ports:
+#       - 8080:8080
+#      depends_on:
+#        elasticsearch:
+#          condition: service_healthy
