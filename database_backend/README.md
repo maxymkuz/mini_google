@@ -7,18 +7,23 @@ in Python in a different container, but this might be a subject to change.
 
 ### Instructions
 
+#### Web backend
 ```
-# Web backend
 # You should probably query something like 127.0.0.1:8080 with the json that contains the query string.
 # The up-to-date info is in src/web_listener.rs towards the bottom
 # I am going to try to work out how this works with Docker tomorrow and will update this
 
-# Crawlers
+# An example of a POST query in curl for local testing
+curl -d '{"text": "the actual search query"}' -H 'Content-Type: application/json' http://127.0.0.1:8080/search
+
+# I think I've added this code to the website module but will see how that works out
+```
+
+#### Crawlers
+
+```
 # (WIP)
 ```
 
 ### Left to figure out:
-* Connect this to the lang detect backend
-* Connect this to the crawler
-* Connect this to the search backend
 * Figure out all the Docker stuff

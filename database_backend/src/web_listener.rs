@@ -22,7 +22,6 @@ async fn search(
 }
 
 /// Launches the web server that listens for crawlers inserts and web backend queries
-#[actix_web::main]
 pub async fn launch_server() -> std::io::Result<()> {
     // Set up logger
     std::env::set_var("RUST_LOG", "actix_web=info");
@@ -34,7 +33,10 @@ pub async fn launch_server() -> std::io::Result<()> {
         App::new()
             .data(client.clone())
             .wrap(middleware::Logger::default())
-            .data(web::JsonConfig::default().limit(4096))
+            // TODO: We do need to limit data. But not now cuz the jsons are going to be cut off.
+            // We need to figure out a way for Elasticsearch to give us less data back (first 100
+            // characters or whatever instead of the full text.
+            //.data(web::JsonConfig::default().limit(4096))
             .service(web::resource("/search").route(web::post().to(search)))
     })
     .bind("127.0.0.1:8080")?

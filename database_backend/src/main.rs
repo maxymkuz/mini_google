@@ -3,8 +3,7 @@
 use elasticsearch::Elasticsearch;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::io::BufRead;
+use std::{collections::HashMap, io::BufRead};
 use std::{fs::File, io::BufReader};
 
 mod database; // MODULE THAT HANDLES THE ACTUAL DATABASE QUERIES
@@ -52,7 +51,7 @@ async fn struct_to_db(
 async fn get_response<'a>(
     client: &'a Elasticsearch,
     query: &'a str,
-) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+) -> Result<Vec<HashMap<std::string::String, std::string::String>>, Box<dyn std::error::Error>> {
     // Search example query
     // We are looking in the column 'full_text' for certain text pattern
     let search_query = serde_json::json!({
@@ -69,7 +68,7 @@ async fn get_response<'a>(
 // Function that parses file line by line, and inserts url, text and language to the database
 // This is basically a mock for the request from a crawler until we figure that out
 // It also launches the web listener that's handling crawlers and backend requests.
-#[tokio::main]
+#[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filename = std::env::args()
         .nth(1)
@@ -83,13 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Establish a database connection
     let client = database::establish_database_connection();
-
-    // Wait so that Elasticsearch will have time to index all of this. This is just so you'd be
-    // able to get a valid result down below.
-    //
-    // I am not sure what the problem is, but it seems to be indexing the actual fulltext for a bit
-    // longer........
-    std::thread::sleep(std::time::Duration::from_millis(5000));
 
     // Reading from pre-made file with data line by line
     let input = File::open(filename)?;
@@ -123,7 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Launching the web server that's going to listen to requests from the web backend and
     // crawlers. Currently only the backend queries are implemented.
-    web_listener::launch_server().unwrap();
+    web_listener::launch_server().await?;
 
     Ok(())
 }
