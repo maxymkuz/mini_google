@@ -14,6 +14,7 @@ mod web_listener; // MODULE THAT LAUNCHES THE WEB SERVER AND LISTENS TO WEB BACK
 #[derive(Serialize, Deserialize)]
 struct CrawledWebsite {
     url: String,
+    title: String,
     full_text: String,
     language: String,
     // urls: Vec<String>, // TODO: uncomment later when we will implement it too
@@ -72,10 +73,11 @@ async fn get_response<'a>(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filename = std::env::args()
         .nth(1)
-        .unwrap_or("./data/100_lines_collected_data.txt".to_string());
+        .unwrap_or("./data/collected.txt".to_string());
     // Creating future json
     let mut website = CrawledWebsite {
         url: "sample_url".to_string(),
+        title: "sample_title".to_string(),
         full_text: "sample_text".to_string(),
         language: "sample_lan".to_string(),
     };
@@ -90,14 +92,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (index, line) in buffered.lines().enumerate() {
         if let Ok(line) = line {
             if index % 3 == 0 {
-                // Parsing a vector of links, divided by space
-                // First link=this page url. All subsequent ones are urls this page links to
-                let mut link_vector = line.split(' ');
-
-                website.url = link_vector.next().unwrap().to_string();
-                // urls = link_vector.map(|x| x.to_string()).collect();
-            }
-            if index % 3 == 1 {
+                website.url = line;
+            } else if index % 3 == 1 {
+                website.title = line;
+            } else if index % 3 == 2 {
                 // Getting the full text of the website
                 website.full_text = line.to_string();
 

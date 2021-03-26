@@ -10,22 +10,22 @@ use serde_json::Value;
 /// with the database.
 pub fn establish_database_connection() -> Elasticsearch {
     // TODO: Implement a smarter retry system
-    //loop {
-    //match Transport::single_node("https://127.0.0.1:9000") {
-    //Ok(transport) => {
-    //let client = Elasticsearch::new(transport);
-    //println!("Successfuly connected to the database, yay!");
-    //return client;
-    //}
-    //Err(_) => {
-    //println!("Failed to connect to the database, retrying in 500 msec");
-    //std::thread::sleep(std::time::Duration::from_millis(500));
-    //continue;
-    //}
-    //}
-    //}
-    let client = Elasticsearch::default();
-    client
+    loop {
+        match Transport::single_node("http://elasticsearch:9200") {
+            Ok(transport) => {
+                let client = Elasticsearch::new(transport);
+                println!("Successfuly connected to the database, yay!");
+                return client;
+            }
+            Err(_) => {
+                println!("Failed to connect to the database, retrying in 500 msec");
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                continue;
+            }
+        }
+    }
+    //let client = Elasticsearch::default();
+    //client
 }
 
 /// Create an index. Returns 200 if it did create an index and 409 if the index was already
@@ -76,12 +76,16 @@ pub async fn get_search(
                     .as_str()
                     .unwrap_or("")
                     .chars()
-                    .take(150)
+                    .take(215)
                     .collect(),
             );
             a.insert(
                 "url".to_string(),
                 x["_source"]["url"].as_str().unwrap_or("").to_string(),
+            );
+            a.insert(
+                "title".to_string(),
+                x["_source"]["title"].as_str().unwrap_or("").to_string(),
             );
             a
         })

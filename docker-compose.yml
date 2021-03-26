@@ -20,15 +20,25 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
-  python_app:
-   build: ./python_app/
-   volumes:
-     - ./python_app/:/usr/src/app/
-   ports:
-     - 5001:5001
-   depends_on:
-     - elasticsearch
 
+  website:
+     build: ./website/
+     ports:
+       - 5000:5000
+     depends_on:
+       elasticsearch:
+         condition: service_healthy
+
+  database_backend:
+    build: ./database_backend/
+    command: data.txt
+    #networks:
+      #- frontend # set up a network that we can use across different containers
+    ports:
+     - 8080:8080
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   cargo: {}
@@ -60,27 +70,6 @@ volumes:
 #    volumes:
 #          - cargo:/home/rust/.cargo
 #          - target:/home/rust/src/target
-#      depends_on:
-#        elasticsearch:
-#          condition: service_healthy
-#
-#    website:
-#     build: ./website/
-#     ports:
-#       - 5000:5000
-#     depends_on:
-#       elasticsearch:
-#         condition: service_healthy
-#
-#    database_backend:
-#      build: ./database_backend/
-#      command: data.txt
-#      #networks:
-#        #- frontend # set up a network that we can use across different containers
-#      environment:
-#        - RUST_BACKTRACE=1
-#      ports:
-#       - 8080:8080
 #      depends_on:
 #        elasticsearch:
 #          condition: service_healthy
