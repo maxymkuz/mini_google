@@ -10,24 +10,25 @@ use serde_json::Value;
 /// with the database.
 pub fn establish_database_connection() -> Elasticsearch {
     // TODO: Implement a smarter retry system
-    loop {
-        match Transport::single_node("http://elasticsearch:9200") {
-            Ok(transport) => {
-                let client = Elasticsearch::new(transport);
-                println!("Successfuly connected to the database, yay!");
-                return client;
-            }
-            Err(_) => {
-                println!("Failed to connect to the database, retrying in 500 msec");
-                std::thread::sleep(std::time::Duration::from_millis(500));
-                continue;
-            }
-        }
-    }
-    //let client = Elasticsearch::default();
-    //client
+    //loop {
+    //match Transport::single_node("http://elasticsearch:9200") {
+    //Ok(transport) => {
+    //let client = Elasticsearch::new(transport);
+    //println!("Successfuly connected to the database, yay!");
+    //return client;
+    //}
+    //Err(_) => {
+    //println!("Failed to connect to the database, retrying in 500 msec");
+    //std::thread::sleep(std::time::Duration::from_millis(500));
+    //continue;
+    //}
+    //}
+    //}
+    let client = Elasticsearch::default();
+    client
 }
 
+// TODO: Figure out whether this one does the same as the bulk one in main and fix it.
 /// Create an index. Returns 200 if it did create an index and 409 if the index was already
 /// there.
 pub async fn send_scrapped_website(

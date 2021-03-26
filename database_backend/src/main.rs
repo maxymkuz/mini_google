@@ -1,8 +1,9 @@
 //! Module that currently is supposed to read data from file, and push it to database.
 //! Later, this will be fully-functional backend for crawlers to identify the language and talk to db
-use elasticsearch::Elasticsearch;
+use elasticsearch::{http::request::JsonBody, BulkParts, Elasticsearch};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::{collections::HashMap, io::BufRead};
 use std::{fs::File, io::BufReader};
 
@@ -20,12 +21,9 @@ struct CrawledWebsite {
     // urls: Vec<String>, // TODO: uncomment later when we will implement it too
 }
 
-// we will use this func later in crawlers, so it has to be separate. Possibly make lang detection here later
-async fn struct_to_db(
-    website: &CrawledWebsite,
-    client: &Elasticsearch,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // We do not care about language detection (for now)
+/// Sending the crawled websites to the database. Does this in bulk and is usable for large
+/// files
+async fn struct_to_db(client: &Elasticsearch, body: Vec<JsonBody<Value>>) -> Result<(), ()> {
     // TODO: Implement proper language detection, error handling here etc.
     //let languages: Vec<(String, f64)> =
     //lang_detect::send_lang_detection_query(&website.text)
@@ -34,18 +32,21 @@ async fn struct_to_db(
     // saving only a dominant language(with the highest probability) to struct
     //language = languages[0].0.to_owned();
 
-    // Sending the crawled website to the database
-    // Retrying if something went wrong until we get it done
-    loop {
-        let response = database::send_scrapped_website(&client, serde_json::json!(website)).await?;
+    let response = match client
+        .bulk(BulkParts::Index("english"))
+        .body(body)
+        .send()
+        .await
+    {
+        Ok(x) => x,
+        _ => return Err(()),
+    };
 
-        // Creating a json and pushing to database:
-        match response.status_code() {
-            StatusCode::OK => break,
-            _ => continue,
-        }
+    // Creating a json and pushing to database:
+    match response.status_code() {
+        StatusCode::OK => return Ok(()),
+        _ => return Err(()),
     }
-    Ok(())
 }
 
 // Func to get a response from db, according to user query
@@ -89,6 +90,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input = File::open(filename)?;
     let buffered = BufReader::new(input);
 
+    // Collecting requests to the Elasticsearch database
+    let mut body: Vec<JsonBody<_>> = Vec::new();
+
     for (index, line) in buffered.lines().enumerate() {
         if let Ok(line) = line {
             if index % 3 == 0 {
@@ -100,10 +104,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 website.full_text = line.to_string();
 
                 // Sending the data stored in struct website to database
-                struct_to_db(&website, &client).await?;
+                body.push(json!({"index": {"_id": (index/3).to_string()}}).into());
+                body.push(json!(website).into());
             }
         }
     }
+    struct_to_db(&client, body)
+        .await
+        .expect("Couldn't bulk index the file");
 
     println!("Put the file in the database");
 
@@ -113,6 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Launching the web server that's going to listen to requests from the web backend and
     // crawlers. Currently only the backend queries are implemented.
+    println!("Listening for queries and inserts!");
     web_listener::launch_server().await?;
 
     Ok(())
