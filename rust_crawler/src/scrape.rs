@@ -39,6 +39,9 @@ pub async fn scrape(scrape_data: ScrapeParam) -> std::result::Result<ScrapeData,
     // where a better part of our compute power is spent
     let res = Document::from(&res[..]);
 
+    // Scrapping the title of the page
+    let page_title = get_page_title(&res);
+
     // Scrapping all text from the page
     let full_text = get_full_text(&res);
 
@@ -51,10 +54,20 @@ pub async fn scrape(scrape_data: ScrapeParam) -> std::result::Result<ScrapeData,
 
     Ok(ScrapeData {
         webpage,
+        page_title,
         all_links,
         structured_data,
         full_text,
     })
+}
+
+/// Parses the HTML document looking for the (required) title tag
+fn get_page_title(html: &Document) -> String {
+    let title = match html.find(Name("title")).next() {
+        Some(x) => x,
+        None => return "".to_string(),
+    };
+    title.text()
 }
 
 /// Parsing the structured data on the page
