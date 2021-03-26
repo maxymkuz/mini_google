@@ -27,7 +27,7 @@ struct Result {
 // Homepage of the website
 #[get("/")]
 fn index() -> Template {
-    let context: Vec<HashMap<String, String>> = vec![];
+    let context: HashMap<String, String> = HashMap::new();
     Template::render("home", &context)
 }
 
@@ -36,7 +36,8 @@ fn index() -> Template {
 #[get("/search?<user_search>")]
 fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: here should be language detection
-    let json_to_send = user_search;
+    let mut json_to_send = HashMap::new();
+    json_to_send.insert("text", user_search);
 
     // Create an empty context
     let mut context = HashMap::new();
@@ -44,7 +45,7 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     // Send a request to the database backend (currently running locally)
     // If something goes wrong, we just return an empty template
     let results = match client
-        .post("http://127.0.0.1:8080")
+        .post("http://127.0.0.1:8080/search")
         .json(&json_to_send)
         .send()
     {
@@ -98,4 +99,3 @@ fn main() {
         .attach(Template::fairing())
         .launch();
 }
-

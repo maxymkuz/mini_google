@@ -206,7 +206,7 @@ async fn main() -> Result<()> {
     let pool = ThreadPool::new(args.threads_num, args.user_agent, high_level_domain);
 
     // Opening an output file
-    //let mut output = File::create(args.output_file)?;
+    let mut output = File::create(args.output_file)?;
 
     // A nice TUI debug interface with the current progress
     // TODO: Add a nice way to see what each thread is doing right now
@@ -299,7 +299,7 @@ async fn main() -> Result<()> {
                     // Writing collected structured data to the file
                     // Should probaly switch to this: https://docs.rs/async-std/1.9.0/async_std/fs/struct.File.html#impl-Write
                     // But this is more of a debug thing so who cares
-                    //write!(output, "{}\n{}\n{}", url, title, full_text);
+                    write!(output, "{}\n{}\n{}\n", url, title, full_text);
 
                     // Adding newly collected links to the webpage list
                     new_urls.into_iter().for_each(|new_url| {
