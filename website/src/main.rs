@@ -65,7 +65,7 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: add pagination
     // Displaying results on the website page
     context.insert("results", &results);
-    Template::render("search", &results)
+    Template::render("search", &context)
 }
 
 // Catching some errors that might occur
