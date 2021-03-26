@@ -35,10 +35,19 @@ fn index() -> Template {
 fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: here should be language detection
     let mut json_to_send = HashMap::new();
-    json_to_send.insert("text", &user_search);
-
     // Create an empty context
     let mut context = HashMap::new();
+
+    // Adding search string to the resulting page
+    let mut new_str = String::new();
+    new_str.clone_from(&user_search);
+    let mut additional_data = HashMap::new();
+    additional_data.insert(String::from("query"), new_str);
+    let mut vector_additional_data = Vec::new();
+    vector_additional_data.insert(0, additional_data);
+    context.insert("additional_data", &vector_additional_data);
+
+    json_to_send.insert("text", &user_search);
 
     // Send a request to the database backend (currently running locally)
     // If something goes wrong, we just return an empty template
@@ -56,6 +65,7 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
         Err(_) => return Template::render("empty_search", &context),
     };
 
+    // Don't mind this, this is for testing locally
     // let mut test1 = HashMap::new();
     // test1.insert(String::from("title"), String::from("AAAaaaaAAAAAA"));
     // test1.insert(String::from("description"), String::from("bla bla"));
@@ -63,13 +73,8 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     // let mut test_results = Vec::new();
     // test_results.insert(0, test1);
 
-    let mut additional_data = HashMap::new();
-    additional_data.insert(String::from("query"), user_search);
-    let mut vector_additional_data = Vec::new();
-    vector_additional_data.insert(0, additional_data);
     // TODO: add pagination
     // Displaying results on the website page
-    context.insert("additional_data", &vector_additional_data);
     context.insert("results", &results);
     Template::render("search", &context)
 }

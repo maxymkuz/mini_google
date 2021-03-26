@@ -57,10 +57,13 @@
                             <form action="/search" method="get">
                                 <div class="field has-addons">
                                     <p class="control is-expanded">
+                                        {% for data in additional_data %}
                                         <label>
-                                            <input class="input is-link" autofocus type="text" placeholder="Search"
+                                            <input class="input is-link" autofocus type="text"
+                                                   placeholder="{{data.query}}"
                                                    name="user_search">
                                         </label>
+                                        {% endfor %}
                                     </p>
                                     <div class="control">
                                         <button type="submit" class="button is-link">
