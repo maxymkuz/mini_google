@@ -6,8 +6,8 @@ import requests
 import json
 from bs4 import BeautifulSoup
 import sys
-from termcolor import colored
 import queue
+from database.elastic_manipulator import ElasticSearchDB
 
 
 def get_many(mp_queue, queue, n):
@@ -45,8 +45,11 @@ class Crawler:
     Perfrom asynchronous crawling of given queue of items
     """
 
-    def __init__(self, queue, max_depth=2, concurrent_tasks=4, max_queue_size=32, max_cycle=3, delay=2):
+    def __init__(self, queue, db, max_depth=2,
+                 concurrent_tasks=4, max_queue_size=32,
+                 max_cycle=3, delay=2):
         self.delay = delay
+        self.db = db
         self.max_depth = max_depth
         self.max_queue_size = max_queue_size
         self.concurrent_tasks = concurrent_tasks
@@ -84,19 +87,29 @@ class Crawler:
         """
         parser = BeautifulSoup(response.text, 'html.parser')
 
-        text = parser.get_text
+        text = parser.get_text()
 
         structured_data = None
         elem = parser.find("script", {"type": "application/ld+json"})
         if elem is not None:
             structured_data = json.loads(elem.contents[0])
+        
+        title = parser.title
+        if title is not None:
+            title = title.contents[0]
 
         links = [element.get("href") for element in parser.find_all("a")]
 
         sorted_links = self.sort_links(response.url, links)
 
-        return {'url': response.url, 'text': text, 'structured_data': structured_data,
-                'external_links': sorted_links["external_links"], 'internal_links': sorted_links["internal_links"]}
+        return {
+            'url': response.url,
+            'text': text,
+            'structured_data': structured_data,
+            'title': title,
+            'external_links': sorted_links["external_links"],
+            'internal_links': sorted_links["internal_links"]
+            }
 
     def process_item(self, item):
         """
@@ -116,14 +129,20 @@ class Crawler:
         data = self.parse(response)
 
         self.send_data(data, item.depth + 1)
+        print(1)
 
     def back_to_queue(self, item):
         """
-        Returns item to the queue if it is too early to scrape it
+        Returns item to the queue if it hasn't returned
+        url content
         """
         if item.cycle > item.max_cycle:
             return
-        item.time = datetime.now() + timedelta(seconds=self.delay ** item.cycle)
+        
+        # time when we will be able to process this item
+        item.time = datetime.now() + timedelta(
+            seconds=self.delay ** item.cycle
+            )
         item.cycle += 1
         self.global_queue.put(item)
 
@@ -135,6 +154,8 @@ class Crawler:
         if depth <= self.max_depth:
             for link in data["internal_links"]:
                 self.global_queue.put(Item(link, datetime.now(), depth))
+        self.db.add_data(data, data["url"])
+        print(data)
 
     async def process_all(self):
         """
@@ -160,26 +181,32 @@ class Crawler:
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
-def multiprocessing_crawl(queue, max_depth=2, processes=4, concurrent_tasks=4,
-                          max_queue_size=32, max_cycle=3, delay=2):
+def multiprocessing_crawl(queue, db, max_depth=2, processes=4,
+                          concurrent_tasks=4, max_queue_size=32,
+                          max_cycle=3, delay=2):
     """
     Processes all items in the queue using multiple sub-processes
     """
     crawlers = [Crawler(
-        queue, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
+        queue, db, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
         max_queue_size=max_queue_size, max_cycle=max_cycle,
         delay=delay
     ) for i in range(processes - 1)]
-    processes = [multiprocessing.Process(target=asyncio.run, args=(item.crawl_global_queue(),)) for item in crawlers]
+
+    processes = [
+        multiprocessing.Process(
+            target=asyncio.run, args=(item.crawl_global_queue(),)
+            )
+        for item in crawlers]
+
     for item in processes:
         item.start()
 
     asyncio.run(Crawler(
-        queue, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
+        queue, db, max_depth=max_depth, concurrent_tasks=concurrent_tasks,
         max_queue_size=max_queue_size, max_cycle=max_cycle,
         delay=delay
     ).crawl_global_queue())
-
 
     for item in processes:
         item.join()
@@ -188,13 +215,19 @@ def multiprocessing_crawl(queue, max_depth=2, processes=4, concurrent_tasks=4,
 def main():
     args = sys.argv
     filename = args[1]
+    db = ElasticSearchDB()
+    if not db.connect("http://localhost", 9200):
+        print("Can't connect to elastic")
+        return -1
+    print("Connected to elastic")
+
     queue = multiprocessing.Queue()
     with open(filename) as f:
         for line in f.readlines():
             queue.put(Item(line.strip(), datetime.now()))
             print(line.strip())
 
-    multiprocessing_crawl(queue, *map(int, args[2:]))
+    multiprocessing_crawl(queue, db, *map(int, args[2:]))
     print("Finished")
 
 
