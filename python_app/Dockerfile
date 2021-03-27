@@ -1,8 +1,7 @@
 FROM python:latest
-WORKDIR /code
-ADD requirements.txt requirements.txt
+RUN mkdir /usr/src/app/
+COPY . /usr/src/app/
+WORKDIR /usr/src/app/
+EXPOSE 5000
 RUN pip install -r requirements.txt
-COPY db_manipulator.py db_manipulator.py
-COPY api_usage.py api_usage.py
-# CMD ["python", "-u", "db_manipulator.py"]
-CMD ["python", "-u", "api_usage.py"]
+CMD ["python", "api_usage.py"]

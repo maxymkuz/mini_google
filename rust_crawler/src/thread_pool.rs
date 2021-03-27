@@ -27,7 +27,7 @@ error_chain! {
 /// if it has encountered errors, sends back the URL that errored
 pub enum WorkerResult {
     /// The URL was parsed successfully, return all of the scrapped data
-    Done(String, Option<String>, BTreeSet<String>, String),
+    Done(String, String, Option<String>, BTreeSet<String>, String),
     /// Something went wrong during the processing
     Failed(String),
 }
@@ -95,6 +95,7 @@ pub struct ScrapeParam {
 /// A struct that `scrape` function returns after scrapping a webpage
 pub struct ScrapeData {
     pub webpage: String,
+    pub page_title: String,
     pub all_links: BTreeSet<String>,
     pub structured_data: Option<String>,
     pub full_text: String,
@@ -149,6 +150,7 @@ impl Worker {
                                                 .new_data_sender
                                                 .send(WorkerResult::Done(
                                                     scrape_res.webpage,
+                                                    scrape_res.page_title,
                                                     scrape_res.structured_data,
                                                     scrape_res.all_links,
                                                     scrape_res.full_text,

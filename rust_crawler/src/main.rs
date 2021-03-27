@@ -3,7 +3,6 @@
 //!
 //! It is one of two versions of such a crawler (the other being
 //! developed in Python at https://github.com/maxymkuz/mini_google )
-use chrono::{NaiveDate, Utc};
 use clap::{App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Url;
@@ -109,11 +108,6 @@ fn arg_parser() -> Arguments {
 /// I am saving time in seconds that passed since the beginning of the program in u16
 /// (which should leave about 18 hours of work for us to work with)
 ///
-/// I am not really using VisitedFinal at the moment, since I am just removing the URL from the
-/// map as soon as it's done. I also should get rid of ErrorFinal I think. Maybe just keep them for
-/// illustrative purposes or something? But I am just essentially wasting CPU time on updating them
-/// instead of just removing the URLs.
-///
 /// So the possible paths in this state machine for every URL are:
 ///
 ///```text
@@ -127,6 +121,11 @@ fn arg_parser() -> Arguments {
 ///          |
 ///       NotSent
 ///```
+///
+/// I am not really using VisitedFinal at the moment, since I am just removing the URL from the
+/// map as soon as it's done. I also should get rid of ErrorFinal I think. Maybe just keep them for
+/// illustrative purposes or something? But I am just essentially wasting CPU time on updating them
+/// instead of just removing the URLs.
 #[derive(Debug)]
 enum UrlState {
     /// Not sent and not visited - should be picked up by the thread and sent to workers
@@ -207,7 +206,7 @@ async fn main() -> Result<()> {
     let pool = ThreadPool::new(args.threads_num, args.user_agent, high_level_domain);
 
     // Opening an output file
-    //let mut output = File::create(args.output_file)?;
+    let mut output = File::create(args.output_file)?;
 
     // A nice TUI debug interface with the current progress
     // TODO: Add a nice way to see what each thread is doing right now
@@ -296,11 +295,11 @@ async fn main() -> Result<()> {
         // accordingly, updating whether the scrape was successful or resulted in an error
         if let Ok(worker_result) = pool.new_data_receiver.try_recv() {
             match worker_result {
-                WorkerResult::Done(url, sd, new_urls, full_text) => {
+                WorkerResult::Done(url, title, _sd, new_urls, full_text) => {
                     // Writing collected structured data to the file
                     // Should probaly switch to this: https://docs.rs/async-std/1.9.0/async_std/fs/struct.File.html#impl-Write
                     // But this is more of a debug thing so who cares
-                    //write!(output, "{} ", url);
+                    write!(output, "{}\n{}\n{}\n", url, title, full_text);
 
                     // Adding newly collected links to the webpage list
                     new_urls.into_iter().for_each(|new_url| {

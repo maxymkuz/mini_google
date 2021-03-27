@@ -1,0 +1,17 @@
+[package]
+name = "database_backend"
+version = "0.1.0"
+authors = ["maxymkuz <maxymkuz@gmail.com>", "LastGenius-edu <as.andreysultanov@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.2", features = ["json"] }
+serde_json = "1.0.59"
+serde = { version = "1.0.117", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+elasticsearch = "7.11.0-alpha.1"
+# We need this beta version cuz 3.x actix uses tokio 0.2, I asked around and it seems to be stable enough for us
+actix-web = "4.0.0-beta.4"
+env_logger = "0.8"

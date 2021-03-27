@@ -10,7 +10,4 @@ To test it on your own:
 # To launch python language detection server
 pip install -r requirements.txt
 python3 lang_detect.py
-
-# To use a rust example
-cargo run
 ```
