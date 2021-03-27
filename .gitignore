@@ -6,4 +6,5 @@ out.txt
 flamegraph.svg
 perf.data
 perf.data.old
-ES_DATA
+ES_DATA 
+big.txt

@@ -2,14 +2,17 @@
 Course project for the Architecture of Computer Systems course.
 
 ## Overview:
+![](images/recording.gif)
+
+## Architecture:
 ![](images/structure.png)
 
 We are working on multiple components of the web crawler at the same time:
 
 * [Website backend](./website)
-* *(WIP) Database is being transferred to ElasticSearch*
-* Two crawlers (one in [Python](./python_crawler), and one in [Rust](./rust_crawler) )
-* Language detection backend in [Rust](./rust_crawler_backend).
+* [Elasticsearch database backend](./database_backend)
+* Two crawlers (one in [Python](./python_crawler), and one in [Rust](./rust_crawler))
+* Language detection backend in [Rust](./rust_lang_detection) and [Python](./lang_detect_python).
 
 Each component is intended to run as a separate Docker container, for us
 to be able to freely mix them in different amounts and on different computers/servers.
