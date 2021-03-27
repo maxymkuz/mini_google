@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let buffered = BufReader::new(input);
 
     // Collecting requests to the Elasticsearch database
-    let mut body: Vec<JsonBody<_>> = Vec::new();
+    let mut body: Vec<JsonBody<_>> = Vec::with_capacity(10000);
 
     for (index, line) in buffered.lines().enumerate() {
         if let Ok(line) = line {
@@ -108,10 +108,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 body.push(json!(website).into());
             }
         }
+
+        if body.len() == 5000 {
+            println!("Pushed 5000 websites into Elastic");
+            struct_to_db(&client, body)
+                .await
+                .expect("Couldn't bulk index the file");
+            body = Vec::with_capacity(5000);
+        }
     }
-    struct_to_db(&client, body)
-        .await
-        .expect("Couldn't bulk index the file");
 
     println!("Put the file in the database");
 
