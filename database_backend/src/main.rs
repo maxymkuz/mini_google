@@ -49,32 +49,16 @@ async fn struct_to_db(client: &Elasticsearch, body: Vec<JsonBody<Value>>) -> Res
     }
 }
 
-// Func to get a response from db, according to user query
-async fn get_response<'a>(
-    client: &'a Elasticsearch,
-    query: &'a str,
-) -> Result<Vec<HashMap<std::string::String, std::string::String>>, Box<dyn std::error::Error>> {
-    // Search example query
-    // We are looking in the column 'full_text' for certain text pattern
-    let search_query = serde_json::json!({
-        "query": {
-            "match": {
-                "full_text": query.to_string()
-            }
-        }
-    });
-    let search_result = database::get_search(&client, search_query).await?;
-    Ok(search_result)
-}
-
 // Function that parses file line by line, and inserts url, text and language to the database
 // This is basically a mock for the request from a crawler until we figure that out
 // It also launches the web listener that's handling crawlers and backend requests.
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Success!!");
     let filename = std::env::args()
         .nth(1)
-        .unwrap_or("./data/collected.txt".to_string());
+        .unwrap_or("/src/collected.txt".to_string());  // ---------------------------
+        // .unwrap_or("./data/collected.txt".to_string());  // ---------------------------
     // Creating future json
     let mut website = CrawledWebsite {
         url: "sample_url".to_string(),
@@ -130,4 +114,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     web_listener::launch_server().await?;
 
     Ok(())
+}
+
+// Func to get a response from db, according to user query
+async fn get_response<'a>(
+    client: &'a Elasticsearch,
+    query: &'a str,
+) -> Result<Vec<HashMap<std::string::String, std::string::String>>, Box<dyn std::error::Error>> {
+    // Search example query
+    // We are looking in the column 'full_text' for certain text pattern
+    let search_query = serde_json::json!({
+        "query": {
+            "match": {
+                "full_text": query.to_string()
+            }
+        }
+    });
+    let search_result = database::get_search(&client, search_query).await?;
+    Ok(search_result)
 }
