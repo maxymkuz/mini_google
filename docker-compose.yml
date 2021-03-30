@@ -1,5 +1,6 @@
 version: "3.8"
 services:
+<<<<<<< HEAD
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
@@ -37,9 +38,6 @@ services:
 
   database_backend:
     build: ./database_backend/
-#    command: "cargo run"
-    #networks:
-      #- frontend # set up a network that we can use across different containers
     ports:
      - 8080:8080
     depends_on:
@@ -70,19 +68,14 @@ services:
       FLASK_DEBUG: 1
     restart: always
 
-
-
 volumes:
   cargo: {}
   target: {}
   elasticsearch-data:
     driver: local
 
-
 #     python_app:
 #       build: ./python_app/
 #      depends_on:
 #        elasticsearch:
 #          condition: service_healthy
-#
-#

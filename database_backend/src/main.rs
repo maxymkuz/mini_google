@@ -57,9 +57,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Success!!");
     let filename = std::env::args()
         .nth(1)
-        .unwrap_or("/src/collected.txt".to_string());  // ---------------------------
-        // .unwrap_or("./data/collected.txt".to_string());  // ---------------------------
-    // Creating future json
+        .unwrap_or("/src/collected.txt".to_string()); // ---------------------------
+                                                      // .unwrap_or("./data/collected.txt".to_string());  // ---------------------------
+                                                      // Creating future json
     let mut website = CrawledWebsite {
         url: "sample_url".to_string(),
         title: "sample_title".to_string(),
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!("Put the file in the database");
+    println!("Put the file in the database!");
 
     // Just an example launch
     //let result = get_response(&client, "word").await?;

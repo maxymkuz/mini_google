@@ -1,10 +1,9 @@
 # Build stage
 FROM ekidd/rust-musl-builder:latest AS builder
 
-
-RUN mkdir -p /home/rust/my-project
-WORKDIR /home/rust/my-project
-VOLUME ["/home/rust/myproject"]
+RUN mkdir -p /home/rust/database_backend
+WORKDIR /home/rust/database_backend
+VOLUME ["/home/rust/databasebackend"]
 
 # cache dependency artifacts. 'Cargo build' builds
 # both dependencies and project files,
@@ -13,43 +12,25 @@ VOLUME ["/home/rust/myproject"]
 COPY --chown=rust:rust Cargo.toml Cargo.toml
 COPY --chown=rust:rust Cargo.lock Cargo.lock
 
-RUN mkdir src
+RUN mkdir -p src
 RUN echo 'fn main() {}' > src/main.rs
 RUN cargo build --release
 
 # build the project using prebuilt deps
-RUN rm /home/rust/my-project/src/main.rs
+RUN rm /home/rust/database_backend/src/main.rs
 COPY --chown=rust:rust ./src ./src
 RUN mkdir data
-COPY data/collected.txt data/data.txt
-
-RUN ls target/x86_64-unknown-linux-musl/release/database_backend
-#RUN cat src/main.rs
 
 RUN cargo build --release
 
-# R
+FROM scratch
 
+COPY data/collected.txt data/data.txt
 
+COPY --from=builder \
+    /home/rust/database_backend/target/x86_64-unknown-linux-musl/release/database_backend \
+    /usr/local/bin/
 
-## Build stage
-#FROM ekidd/rust-musl-builder:latest AS builder
-#
-#ADD --chown=rust:rust . ./
-#RUN cargo build --release
-#
-## Run stage
-#FROM scratch
-#
-#COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-##RUN mkdir data
-##COPY data/collected.txt data/data.txt
-#COPY data/collected.txt data.txt
-#
-#COPY --from=builder \
-#    /home/rust/src/target/x86_64-unknown-linux-musl/release/database_backend \
-#    /usr/local/bin/
-#
-#EXPOSE 8080/tcp
-#ENTRYPOINT ["/usr/local/bin/database_backend"]
+EXPOSE 8080/tcp
 
+ENTRYPOINT ["/usr/local/bin/database_backend"]

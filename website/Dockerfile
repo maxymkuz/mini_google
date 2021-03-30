@@ -1,59 +1,39 @@
-
-
 # Build stage
-FROM rust:1.46 as build
+FROM ekidd/rust-musl-builder:nightly-2021-02-13 as builder
 
-RUN rustup default nightly
-
-RUN mkdir -p /home/rust/website
-WORKDIR /home/rust/website
-VOLUME ["/home/rust/website-dir"]
+RUN mkdir -p /home/rust/website-backend
+WORKDIR /home/rust/website-backend
+VOLUME ["/home/rust/website"]
 
 # cache dependency artifacts. 'Cargo build' builds
 # both dependencies and project files,
 # splitting the project into dependencies with single
 # empty main and current project sources.
-COPY Cargo.toml Cargo.toml
-COPY Cargo.lock Cargo.lock
+COPY --chown=rust:rust Rocket.toml Rocket.toml
+COPY --chown=rust:rust Cargo.toml Cargo.toml
+COPY --chown=rust:rust Cargo.lock Cargo.lock
 
-RUN mkdir src
+RUN mkdir -p src
 RUN echo 'fn main() {}' > src/main.rs
-RUN cargo build
-
+RUN cargo build --release
 
 # build the project using prebuilt deps
-RUN ls src
-RUN rm src/main.rs
+RUN rm /home/rust/website-backend/src/main.rs
+COPY --chown=rust:rust ./src ./src
+COPY --chown=rust:rust ./static ./static
+COPY --chown=rust:rust ./templates ./templates
 
-COPY ./Rocket.toml ./Cargo.toml ./Cargo.lock ./
-COPY ./src ./src
+RUN cargo build --release
+
+FROM scratch
+
 COPY ./static ./static
 COPY ./templates ./templates
 
-#RUN ls target/debug/build
+COPY --from=builder \
+    /home/rust/website-backend/target/x86_64-unknown-linux-musl/release/rust_rocket \
+    /usr/local/bin/
 
-#RUN cat src/main.rs
+EXPOSE 5000/tcp
 
-RUN cargo build
-
-
-
-# OLD DOCKEFILE:
-
-#FROM rust:1.46 as build
-#
-#RUN rustup default nightly
-#
-#WORKDIR ./website
-#COPY ./Rocket.toml ./Cargo.toml ./Cargo.lock ./
-#COPY ./src ./src
-#COPY ./static ./static
-#COPY ./templates ./templates
-#
-#EXPOSE 5000/tcp
-#
-#RUN cargo build
-#
-#CMD ["cargo", "run"]
-
-
+ENTRYPOINT ["/usr/local/bin/rust_rocket"]

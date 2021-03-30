@@ -23,10 +23,8 @@ Webapp uses Rust Rocket framework and Tera templates.
 Without Docker:
 ```bash
 # Set Rust toolchain in this project to nightly
-rustup override set nightly
-
-# Build and run the app
-cargo run
+rustup install nightly-2021-02-13
+cargo +nightly-2021-02-13 build --release
 ```
 With Docker:
 ```
