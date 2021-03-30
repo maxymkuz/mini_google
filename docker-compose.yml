@@ -1,35 +1,39 @@
 version: "3.8"
 services:
-#  elasticsearch:
-#    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-#    container_name: elasticsearch
-#    environment:
-#      - xpack.security.enabled=false
-#      - discovery.type=single-node
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#      nofile:
-#        soft: 65536
-#        hard: 65536
-#    cap_add:
-#      - IPC_LOCK
-#    volumes:
-#      - elasticsearch-data:/usr/share/elasticsearch/data
-#    ports:
-#      - 9200:9200
-#      - 9300:9300
 
-#  website:
-#     build: ./website/
-#     ports:
-#       - 5000:5000
-#     depends_on:
-#       - elasticsearch
-#      depends_on:
-#        elasticsearch:
-#          condition: service_healthy
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    healthcheck:  # to prevent apps from quering inexisting database
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+  website:
+     build: ./website/
+     ports:
+       - 5000:5000
+     depends_on:
+       elasticsearch:
+         condition: service_healthy
 
   database_backend:
     build: ./database_backend/
@@ -38,11 +42,35 @@ services:
       #- frontend # set up a network that we can use across different containers
     ports:
      - 8080:8080
-#    depends_on:
-#      - elasticsearch
-#    depends_on:
-#      elasticsearch:
-#        condition: service_healthy
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+
+  rust_crawler:
+    build: ./rust_crawler/
+#    command:
+#      --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
+    volumes:
+          - cargo:/home/rust/.cargo
+          - target:/home/rust/src/target
+
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  lang_detect_python:
+    build: ./lang_detect_python/
+    volumes:
+      - ./lang_detect_python/:/usr/src/app/
+    ports:
+      - 5001:5001
+    environment:
+      PORT: 5001
+      FLASK_DEBUG: 1
+    restart: always
+
+
 
 volumes:
   cargo: {}
@@ -50,17 +78,7 @@ volumes:
   elasticsearch-data:
     driver: local
 
-#     lang_detect_python:
-#       build: ./lang_detect_python/
-#       volumes:
-#         - ./lang_detect_python/:/usr/src/app/
-#       ports:
-#         - 5001:5001
-#       environment:
-#         PORT: 5001
-#         FLASK_DEBUG: 1
-#       restart: always
-#
+
 #     python_app:
 #       build: ./python_app/
 #      depends_on:
@@ -68,12 +86,3 @@ volumes:
 #          condition: service_healthy
 #
 #
-#    rust_crawler:
-#    build: ./rust_crawler/
-#    command: --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
-#    volumes:
-#          - cargo:/home/rust/.cargo
-#          - target:/home/rust/src/target
-#      depends_on:
-#        elasticsearch:
-#          condition: service_healthy
