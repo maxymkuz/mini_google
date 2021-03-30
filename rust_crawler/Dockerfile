@@ -1,8 +1,8 @@
 # Build stage
 FROM ekidd/rust-musl-builder:latest AS builder
 
-RUN mkdir -p /home/rust/crawler
-WORKDIR /home/rust/crawler
+RUN mkdir -p /home/rust/rust_crawler
+WORKDIR /home/rust/rust_crawler
 VOLUME ["/home/rust/crawler"]
 
 # cache dependency artifacts. 'Cargo build' builds
@@ -17,7 +17,7 @@ RUN echo 'fn main() {}' > src/main.rs
 RUN cargo build --release
 
 # build the project using prebuilt deps
-RUN rm /home/rust/my-project/src/main.rs
+RUN rm /home/rust/rust_crawler/src/main.rs
 COPY --chown=rust:rust ./src ./src
 #COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --chown=rust:rust urls.txt urls.txt
