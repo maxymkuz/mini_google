@@ -25,6 +25,9 @@ Without Docker:
 # Set Rust toolchain in this project to nightly
 rustup install nightly-2021-02-13
 cargo +nightly-2021-02-13 build --release
+
+# Run project
+cargo run
 ```
 With Docker:
 ```
