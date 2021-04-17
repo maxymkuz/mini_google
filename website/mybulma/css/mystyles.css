@@ -96,7 +96,7 @@
   user-select: none;
   -moz-appearance: none;
   -webkit-appearance: none;
-  background-color: rgba(10, 10, 10, 0.2);
+  background-color: rgba(255, 255, 255, 0.2);
   border: none;
   border-radius: 290486px;
   cursor: pointer;
@@ -115,7 +115,7 @@
   vertical-align: top;
   width: 20px; }
   .delete::before, .modal-close::before, .delete::after, .modal-close::after {
-    background-color: white;
+    background-color: #0a0a0a;
     content: "";
     display: block;
     left: 50%;
@@ -130,9 +130,9 @@
     height: 50%;
     width: 2px; }
   .delete:hover, .modal-close:hover, .delete:focus, .modal-close:focus {
-    background-color: rgba(10, 10, 10, 0.3); }
+    background-color: rgba(255, 255, 255, 0.3); }
   .delete:active, .modal-close:active {
-    background-color: rgba(10, 10, 10, 0.4); }
+    background-color: rgba(255, 255, 255, 0.4); }
   .is-small.delete, .is-small.modal-close {
     height: 16px;
     max-height: 16px;
@@ -262,7 +262,7 @@ th {
     text-align: inherit; }
 
 html {
-  background-color: white;
+  background-color: #0a0a0a;
   font-size: 16px;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
@@ -379,21 +379,21 @@ table th {
 
 /* Bulma Elements */
 .box {
-  background-color: white;
+  background-color: #0a0a0a;
   border-radius: 6px;
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02);
+  box-shadow: 0 0.5em 1em -0.125em rgba(255, 255, 255, 0.1), 0 0px 0 1px rgba(255, 255, 255, 0.02);
   color: #4a4a4a;
   display: block;
   padding: 1.25rem; }
 
 a.box:hover, a.box:focus {
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0 0 1px #3273dc; }
+  box-shadow: 0 0.5em 1em -0.125em rgba(255, 255, 255, 0.1), 0 0 0 1px #3273dc; }
 
 a.box:active {
-  box-shadow: inset 0 1px 2px rgba(10, 10, 10, 0.2), 0 0 0 1px #3273dc; }
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 0 0 1px #3273dc; }
 
 .button {
-  background-color: white;
+  background-color: #0a0a0a;
   border-color: #dbdbdb;
   border-width: 1px;
   color: #363636;
@@ -1212,7 +1212,7 @@ a.box:active {
     font-size: 1.5rem; }
   .button[disabled],
   fieldset[disabled] .button {
-    background-color: white;
+    background-color: #0a0a0a;
     border-color: #dbdbdb;
     box-shadow: none;
     opacity: 0.5; }
@@ -1587,7 +1587,7 @@ div.icon-text {
     color: currentColor; }
   .notification code,
   .notification pre {
-    background: white; }
+    background: #0a0a0a; }
   .notification pre code {
     background: transparent; }
   .notification > .delete {
@@ -1776,7 +1776,7 @@ div.icon-text {
     background-position: -200% 0; } }
 
 .table {
-  background-color: white;
+  background-color: #0a0a0a;
   color: #363636; }
   .table td,
   .table th {
@@ -2156,7 +2156,7 @@ a.tag:hover {
 
 /* Bulma Form */
 .input, .textarea, .select select {
-  background-color: white;
+  background-color: #0a0a0a;
   border-color: #dbdbdb;
   border-radius: 4px;
   color: #363636; }
@@ -2208,7 +2208,7 @@ a.tag:hover {
       color: rgba(122, 122, 122, 0.3); }
 
 .input, .textarea {
-  box-shadow: inset 0 0.0625em 0.125em rgba(10, 10, 10, 0.05);
+  box-shadow: inset 0 0.0625em 0.125em rgba(255, 255, 255, 0.05);
   max-width: 100%;
   width: 100%; }
   .input[readonly], .textarea[readonly] {
@@ -3016,9 +3016,9 @@ a.tag:hover {
     content: "\0227B"; }
 
 .card {
-  background-color: white;
+  background-color: #0a0a0a;
   border-radius: 0.25rem;
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02);
+  box-shadow: 0 0.5em 1em -0.125em rgba(255, 255, 255, 0.1), 0 0px 0 1px rgba(255, 255, 255, 0.02);
   color: #4a4a4a;
   max-width: 100%;
   position: relative; }
@@ -3034,7 +3034,7 @@ a.tag:hover {
 .card-header {
   background-color: transparent;
   align-items: stretch;
-  box-shadow: 0 0.125em 0.25em rgba(10, 10, 10, 0.1);
+  box-shadow: 0 0.125em 0.25em rgba(255, 255, 255, 0.1);
   display: flex; }
 
 .card-header-title {
@@ -3113,9 +3113,9 @@ a.tag:hover {
   z-index: 20; }
 
 .dropdown-content {
-  background-color: white;
+  background-color: #0a0a0a;
   border-radius: 4px;
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02);
+  box-shadow: 0 0.5em 1em -0.125em rgba(255, 255, 255, 0.1), 0 0px 0 1px rgba(255, 255, 255, 0.02);
   padding-bottom: 0.5rem;
   padding-top: 0.5rem; }
 
@@ -3136,7 +3136,7 @@ button.dropdown-item {
   a.dropdown-item:hover,
   button.dropdown-item:hover {
     background-color: whitesmoke;
-    color: #0a0a0a; }
+    color: white; }
   a.dropdown-item.is-active,
   button.dropdown-item.is-active {
     background-color: #3273dc;
@@ -3424,7 +3424,7 @@ button.dropdown-item {
   padding: 1.25em 1.5em; }
   .message-body code,
   .message-body pre {
-    background-color: white; }
+    background-color: #0a0a0a; }
   .message-body pre code {
     background-color: transparent; }
 
@@ -3440,7 +3440,7 @@ button.dropdown-item {
     display: flex; }
 
 .modal-background {
-  background-color: rgba(10, 10, 10, 0.86); }
+  background-color: rgba(255, 255, 255, 0.86); }
 
 .modal-content,
 .modal-card {
@@ -3502,14 +3502,14 @@ button.dropdown-item {
 
 .modal-card-body {
   -webkit-overflow-scrolling: touch;
-  background-color: white;
+  background-color: #0a0a0a;
   flex-grow: 1;
   flex-shrink: 1;
   overflow: auto;
   padding: 20px; }
 
 .navbar {
-  background-color: white;
+  background-color: #0a0a0a;
   min-height: 3.25rem;
   position: relative;
   z-index: 30; }
@@ -4127,8 +4127,8 @@ a.navbar-item,
   .navbar-link::after {
     display: none; }
   .navbar-menu {
-    background-color: white;
-    box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);
+    background-color: #0a0a0a;
+    box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1);
     padding: 0.5rem 0; }
     .navbar-menu.is-active {
       display: block; }
@@ -4140,7 +4140,7 @@ a.navbar-item,
   .navbar.is-fixed-bottom-touch {
     bottom: 0; }
     .navbar.is-fixed-bottom-touch.has-shadow {
-      box-shadow: 0 -2px 3px rgba(10, 10, 10, 0.1); }
+      box-shadow: 0 -2px 3px rgba(255, 255, 255, 0.1); }
   .navbar.is-fixed-top-touch {
     top: 0; }
   .navbar.is-fixed-top .navbar-menu, .navbar.is-fixed-top-touch .navbar-menu {
@@ -4180,7 +4180,7 @@ a.navbar-item,
       background-color: transparent !important; }
     .navbar.is-transparent .navbar-dropdown a.navbar-item:focus, .navbar.is-transparent .navbar-dropdown a.navbar-item:hover {
       background-color: whitesmoke;
-      color: #0a0a0a; }
+      color: white; }
     .navbar.is-transparent .navbar-dropdown a.navbar-item.is-active {
       background-color: whitesmoke;
       color: #3273dc; }
@@ -4199,7 +4199,7 @@ a.navbar-item,
     border-radius: 6px 6px 0 0;
     border-top: none;
     bottom: 100%;
-    box-shadow: 0 -8px 8px rgba(10, 10, 10, 0.1);
+    box-shadow: 0 -8px 8px rgba(255, 255, 255, 0.1);
     top: auto; }
   .navbar-item.is-active .navbar-dropdown, .navbar-item.is-hoverable:focus .navbar-dropdown, .navbar-item.is-hoverable:focus-within .navbar-dropdown, .navbar-item.is-hoverable:hover .navbar-dropdown {
     display: block; }
@@ -4217,11 +4217,11 @@ a.navbar-item,
     justify-content: flex-end;
     margin-left: auto; }
   .navbar-dropdown {
-    background-color: white;
+    background-color: #0a0a0a;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
     border-top: 2px solid #dbdbdb;
-    box-shadow: 0 8px 8px rgba(10, 10, 10, 0.1);
+    box-shadow: 0 8px 8px rgba(255, 255, 255, 0.1);
     display: none;
     font-size: 0.875rem;
     left: 0;
@@ -4236,14 +4236,14 @@ a.navbar-item,
       padding-right: 3rem; }
       .navbar-dropdown a.navbar-item:focus, .navbar-dropdown a.navbar-item:hover {
         background-color: whitesmoke;
-        color: #0a0a0a; }
+        color: white; }
       .navbar-dropdown a.navbar-item.is-active {
         background-color: whitesmoke;
         color: #3273dc; }
     .navbar.is-spaced .navbar-dropdown, .navbar-dropdown.is-boxed {
       border-radius: 6px;
       border-top: none;
-      box-shadow: 0 8px 8px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+      box-shadow: 0 8px 8px rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1);
       display: block;
       opacity: 0;
       pointer-events: none;
@@ -4270,7 +4270,7 @@ a.navbar-item,
   .navbar.is-fixed-bottom-desktop {
     bottom: 0; }
     .navbar.is-fixed-bottom-desktop.has-shadow {
-      box-shadow: 0 -2px 3px rgba(10, 10, 10, 0.1); }
+      box-shadow: 0 -2px 3px rgba(255, 255, 255, 0.1); }
   .navbar.is-fixed-top-desktop {
     top: 0; }
   html.has-navbar-fixed-top-desktop,
@@ -4287,7 +4287,7 @@ a.navbar-item,
     padding-bottom: 5.25rem; }
   a.navbar-item.is-active,
   .navbar-link.is-active {
-    color: #0a0a0a; }
+    color: white; }
   a.navbar-item.is-active:not(:focus):not(:hover),
   .navbar-link.is-active:not(:focus):not(:hover) {
     background-color: transparent; }
@@ -4350,7 +4350,7 @@ a.navbar-item,
   .pagination-previous:active,
   .pagination-next:active,
   .pagination-link:active {
-    box-shadow: inset 0 1px 2px rgba(10, 10, 10, 0.2); }
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2); }
   .pagination-previous[disabled],
   .pagination-next[disabled],
   .pagination-link[disabled] {
@@ -4420,7 +4420,7 @@ a.navbar-item,
 
 .panel {
   border-radius: 6px;
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02);
+  box-shadow: 0 0.5em 1em -0.125em rgba(255, 255, 255, 0.1), 0 0px 0 1px rgba(255, 255, 255, 0.02);
   font-size: 1rem; }
   .panel:not(:last-child) {
     margin-bottom: 1.5rem; }
@@ -4632,7 +4632,7 @@ label.panel-block {
       background-color: whitesmoke;
       border-bottom-color: #dbdbdb; }
   .tabs.is-boxed li.is-active a {
-    background-color: white;
+    background-color: #0a0a0a;
     border-color: #dbdbdb;
     border-bottom-color: transparent !important; }
   .tabs.is-fullwidth li {
@@ -7282,7 +7282,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-white .tabs.is-boxed a, .hero.is-white .tabs.is-toggle a {
       color: #0a0a0a; }
       .hero.is-white .tabs.is-boxed a:hover, .hero.is-white .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-white .tabs.is-boxed li.is-active a, .hero.is-white .tabs.is-boxed li.is-active a:hover, .hero.is-white .tabs.is-toggle li.is-active a, .hero.is-white .tabs.is-toggle li.is-active a:hover {
       background-color: #0a0a0a;
       border-color: #0a0a0a;
@@ -7326,7 +7326,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-black .tabs.is-boxed a, .hero.is-black .tabs.is-toggle a {
       color: white; }
       .hero.is-black .tabs.is-boxed a:hover, .hero.is-black .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-black .tabs.is-boxed li.is-active a, .hero.is-black .tabs.is-boxed li.is-active a:hover, .hero.is-black .tabs.is-toggle li.is-active a, .hero.is-black .tabs.is-toggle li.is-active a:hover {
       background-color: white;
       border-color: white;
@@ -7370,7 +7370,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-light .tabs.is-boxed a, .hero.is-light .tabs.is-toggle a {
       color: rgba(0, 0, 0, 0.7); }
       .hero.is-light .tabs.is-boxed a:hover, .hero.is-light .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-light .tabs.is-boxed li.is-active a, .hero.is-light .tabs.is-boxed li.is-active a:hover, .hero.is-light .tabs.is-toggle li.is-active a, .hero.is-light .tabs.is-toggle li.is-active a:hover {
       background-color: rgba(0, 0, 0, 0.7);
       border-color: rgba(0, 0, 0, 0.7);
@@ -7414,7 +7414,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-dark .tabs.is-boxed a, .hero.is-dark .tabs.is-toggle a {
       color: #fff; }
       .hero.is-dark .tabs.is-boxed a:hover, .hero.is-dark .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-dark .tabs.is-boxed li.is-active a, .hero.is-dark .tabs.is-boxed li.is-active a:hover, .hero.is-dark .tabs.is-toggle li.is-active a, .hero.is-dark .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
@@ -7458,7 +7458,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-primary .tabs.is-boxed a, .hero.is-primary .tabs.is-toggle a {
       color: #fff; }
       .hero.is-primary .tabs.is-boxed a:hover, .hero.is-primary .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-primary .tabs.is-boxed li.is-active a, .hero.is-primary .tabs.is-boxed li.is-active a:hover, .hero.is-primary .tabs.is-toggle li.is-active a, .hero.is-primary .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
@@ -7502,7 +7502,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-link .tabs.is-boxed a, .hero.is-link .tabs.is-toggle a {
       color: #fff; }
       .hero.is-link .tabs.is-boxed a:hover, .hero.is-link .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-link .tabs.is-boxed li.is-active a, .hero.is-link .tabs.is-boxed li.is-active a:hover, .hero.is-link .tabs.is-toggle li.is-active a, .hero.is-link .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
@@ -7546,7 +7546,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-info .tabs.is-boxed a, .hero.is-info .tabs.is-toggle a {
       color: #fff; }
       .hero.is-info .tabs.is-boxed a:hover, .hero.is-info .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-info .tabs.is-boxed li.is-active a, .hero.is-info .tabs.is-boxed li.is-active a:hover, .hero.is-info .tabs.is-toggle li.is-active a, .hero.is-info .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
@@ -7590,7 +7590,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-success .tabs.is-boxed a, .hero.is-success .tabs.is-toggle a {
       color: #fff; }
       .hero.is-success .tabs.is-boxed a:hover, .hero.is-success .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-success .tabs.is-boxed li.is-active a, .hero.is-success .tabs.is-boxed li.is-active a:hover, .hero.is-success .tabs.is-toggle li.is-active a, .hero.is-success .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
@@ -7634,7 +7634,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-warning .tabs.is-boxed a, .hero.is-warning .tabs.is-toggle a {
       color: rgba(0, 0, 0, 0.7); }
       .hero.is-warning .tabs.is-boxed a:hover, .hero.is-warning .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-warning .tabs.is-boxed li.is-active a, .hero.is-warning .tabs.is-boxed li.is-active a:hover, .hero.is-warning .tabs.is-toggle li.is-active a, .hero.is-warning .tabs.is-toggle li.is-active a:hover {
       background-color: rgba(0, 0, 0, 0.7);
       border-color: rgba(0, 0, 0, 0.7);
@@ -7678,7 +7678,7 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
     .hero.is-danger .tabs.is-boxed a, .hero.is-danger .tabs.is-toggle a {
       color: #fff; }
       .hero.is-danger .tabs.is-boxed a:hover, .hero.is-danger .tabs.is-toggle a:hover {
-        background-color: rgba(10, 10, 10, 0.1); }
+        background-color: rgba(255, 255, 255, 0.1); }
     .hero.is-danger .tabs.is-boxed li.is-active a, .hero.is-danger .tabs.is-boxed li.is-active a:hover, .hero.is-danger .tabs.is-toggle li.is-active a, .hero.is-danger .tabs.is-toggle li.is-active a:hover {
       background-color: #fff;
       border-color: #fff;
