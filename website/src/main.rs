@@ -30,7 +30,6 @@ fn index() -> Template {
 }
 
 // Page, generated after user searches for something
-// TODO: create a template for a case, when there are no search results
 #[get("/search?<user_search>")]
 fn search_page(client: State<Client>, user_search: String) -> Template {
     // TODO: here should be language detection
@@ -70,8 +69,13 @@ fn search_page(client: State<Client>, user_search: String) -> Template {
     // test1.insert(String::from("title"), String::from("AAAaaaaAAAAAA"));
     // test1.insert(String::from("description"), String::from("bla bla"));
     // test1.insert(String::from("url"), String::from("url ... bla bla"));
+    // let mut test2 = HashMap::new();
+    // test2.insert(String::from("title"), String::from("AAAaaaaAAAAAA"));
+    // test2.insert(String::from("description"), String::from("bla bla"));
+    // test2.insert(String::from("url"), String::from("url ... bla bla"));
     // let mut test_results = Vec::new();
     // test_results.insert(0, test1);
+    // test_results.insert(0, test2);
 
     // TODO: add pagination
     // Displaying results on the website page

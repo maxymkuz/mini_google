@@ -8,18 +8,16 @@
 
 
 <body>
-<header>
-    <a href="/">
-        <div class="section">
-            <h1 class="title">Mini Google</h1>
-            <h2 class="subtitle">Experimental Search Engine</h2>
-        </div>
-    </a>
-</header>
 
 <section class="section">
     <div class="columns">
-        <div class="column is-one-quarter">
+        <div class="column is-one-quarter" id="left-bar">
+            <a href="/">
+                <h1 class="title">Mini Google</h1>
+                <h2 class="subtitle">Experimental Search Engine</h2>
+            </a>
+            <div class="section">
+            </div>
             <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
             <ul>
                 <li><a href="/history">
@@ -74,28 +72,33 @@
                             </form>
                         </div>
                     </div>
-                    <ul class="nostyle home">
-                        {% for result in results %}
-                        <li class="section">
-                            <div class="card">
-                                <a href="{{result.url}}">
-                                    <div class="card-content">
-                                        <h2 class="title is-4">{{result.title}}</h2>
-                                        <p class="subtitle">{{result.url}}</p>
-                                        <p class="subtitle">{{result.description}}</p>
+                    <div class="section">
+                        <div class="section">
+
+                            <ul class="nostyle home">
+                                {% for result in results %}
+                                <li class="section">
+                                    <div class="card">
+                                        <a href="{{result.url}}">
+                                            <div class="card-content">
+                                                <h2 class="title is-4">{{result.title}}</h2>
+                                                <p class="subtitle">{{result.url}}</p>
+                                                <p class="subtitle">{{result.description}}</p>
+                                            </div>
+                                        </a>
                                     </div>
-                                </a>
-                            </div>
-                        </li>
-                        {% endfor %}
-                        <div style="text-align: center">
-                            <h2>
-                                <span class="inactive"><i class="fa fa-arrow-left"></i></span>
-                                1 page
-                                <a class="active" href=""><i class="fa fa-arrow-right"></i></a>
-                            </h2>
+                                </li>
+                                {% endfor %}
+                                <div style="text-align: center">
+                                    <h2>
+                                        <span class="inactive"><i class="fa fa-arrow-left"></i></span>
+                                        1 page
+                                        <a class="active" href=""><i class="fa fa-arrow-right"></i></a>
+                                    </h2>
+                                </div>
+                            </ul>
                         </div>
-                    </ul>
+                    </div>
                 </div>
             </div>
         </div>

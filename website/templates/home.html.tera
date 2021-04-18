@@ -1,7 +1,7 @@
 <head>
     <meta charset="utf-8"/>
     <title>Mini Google</title>
-    <link rel="stylesheet" href="/public/css/dark_theme.css">
+    <link rel="stylesheet" href="/public/css/fav_theme.css">
     <!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">-->
     <script src="https://kit.fontawesome.com/2b242693ae.js" crossorigin="anonymous"></script>
     <link rel="shortcut icon" type="image/jpg" href="/public/icon_cat.png"/>
@@ -9,18 +9,16 @@
 
 
 <body>
-<header>
-    <a href="/">
-        <div class="section">
-            <h1 class="title">Mini Google</h1>
-            <h2 class="subtitle">Experimental Search Engine</h2>
-        </div>
-    </a>
-</header>
 
 <section class="section">
     <div class="columns">
         <div class="column is-one-quarter">
+            <a href="/">
+                <h1 class="title">Mini Google</h1>
+                <h2 class="subtitle">Experimental Search Engine</h2>
+            </a>
+            <div class="section">
+            </div>
 
             <h2 class="subtitle"><i class="fas fa-cat"></i> Library</h2>
             <ul>
@@ -48,7 +46,7 @@
                 </a></li>
             </ul>
         </div>
-        <div class="column">
+        <div class="column" id="main-part">
             <div class="container">
                 <div class="field">
                     <div class="columns">
@@ -72,36 +70,41 @@
                             </form>
                         </div>
                     </div>
-                    <ul class="nostyle home">
-                        <li class="section">
-                            <div class="card">
-                                <a href="#">
-                                    <div class="card-content">
-                                        <div class="columns is-vcentered">
-                                            <div class="column is-2">
-                                                <figure class="image is-128x128">
-                                                    <img class="is-rounded" src="/public/winking_cat.png"
-                                                         alt="Winking Cat">
-                                                </figure>
+                    <div class="section">
+
+                        <ul class="nostyle home">
+                            <li class="section">
+                                <div class="section">
+                                    <div class="card">
+                                        <a href="#">
+                                            <div class="card-content">
+                                                <div class="columns is-vcentered">
+                                                    <div class="column is-2">
+                                                        <figure class="image is-128x128">
+                                                            <img class="is-rounded" src="/public/winking_cat.png"
+                                                                 alt="Winking Cat">
+                                                        </figure>
+                                                    </div>
+                                                    <div class="column">
+                                                        <h2 class="title is-4">Welcome to Mini Google!</h2>
+                                                        <p class="subtitle">Try searching for something, results will be
+                                                            displayed here!</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="column">
-                                                <h2 class="title is-4">Welcome to Mini Google!</h2>
-                                                <p class="subtitle">Try searching for something, results will be
-                                                    displayed here!</p>
-                                            </div>
-                                        </div>
+                                        </a>
                                     </div>
-                                </a>
+                                </div>
+                            </li>
+                            <div style="text-align: center">
+                                <h2>
+                                    <span class="inactive"><i class="fa fa-arrow-left"></i></span>
+                                    Meow
+                                    <span class="inactive"><i class="fa fa-arrow-right"></i></span>
+                                </h2>
                             </div>
-                        </li>
-                        <div style="text-align: center">
-                            <h2>
-                                <span class="inactive"><i class="fa fa-arrow-left"></i></span>
-                                Meow
-                                <span class="inactive"><i class="fa fa-arrow-right"></i></span>
-                            </h2>
-                        </div>
-                    </ul>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
