@@ -42,7 +42,7 @@ With Docker:
 
 
 Here is how main page looks like, when dark theme is used:
-![dark main page of the web app (has a cat)](../images/dark_home_page.png)
+![dark main page of the web app (has a cat)](../images/current_home_page.png)
 
 Here with light theme:
 
