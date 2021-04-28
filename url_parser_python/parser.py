@@ -65,19 +65,14 @@ class PageRankDb:
                     continue
                 new_urls = line.strip().split()
                 for url in new_urls:
-                    url_id[url] = url_id.get(url, len(url_id))
+                    url_id[url] = url_id.get(url, len(url_id) + 1)
+                    id_incoming[url_id[url]] = id_incoming.get(url_id[url], set())
 
                 for url in new_urls[1:]:
-                    id_incoming[url_id[url]] = id_incoming.get(url_id[url], set())
                     id_incoming[url_id[url]].add(url_id[new_urls[0]])
 
         self.add_init_urls(sorted(list(url_id), key=lambda url: url_id[url]))
         self.add_init_inlinks(id_incoming)
-
-
-
-
-
 
 
 
