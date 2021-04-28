@@ -1,87 +1,78 @@
-use std::fmt;
+fn pagerank_iteration<'a>(
+    rank: &'a Vec<f64>,
+    rank_new: &'a mut Vec<f64>,
+    adjacency_matrix: &'a Vec<Vec<u32>>,
+    out_nodes_num: &'a Vec<u32>,
+    d: f64
+) {
 
-// fn pagerank_iteration(mut nodes: &Vec<Node>) {
-//
-// }
+    for node_idx in 0..rank.len() {
+        let mut sum: f64 = 0 as f64;
+        for in_node_idx in &adjacency_matrix[node_idx] {
+            // if node_idx == 3 {
+            //     println!("__ {}", rank[*in_node_idx as usize] / out_nodes_num[*in_node_idx as usize] as f64);
+            // }
+            sum += rank[*in_node_idx as usize] / out_nodes_num[*in_node_idx as usize] as f64;
+        }
+        rank_new[node_idx as usize] = (1.0 - d) + d * sum;  // todo: add dampening factor, but later
+    }
+    // println!("INSIDE PAGERANK: {:?}", rank);
+    // println!("INSIDE PAGERANK: {:?}", rank_new);
+    // let rank_new = rank_new;
+    // rank_new
+}
 
 fn main() {
     // the total number of websites we will use in iteration
-    let total_websites: usize = 4;
+    let total_websites: usize = 5;
+    let dampening_factor:f64 = 0.85;
 
     // initialization value for all ranks
     let init_rank: f64 = 1.0 / total_websites as f64;
 
-    let mut rank:Vec<f64> = vec![init_rank; total_websites];
-    let mut rank_new:Vec<f64> = vec![0.0; total_websites];
+    let mut rank: Vec<f64> = vec![init_rank; total_websites];
+    let mut rank_new: Vec<f64> = vec![0.0; total_websites];
 
-    let mut adjacency_matrix:Vec<Vec<u32>> = vec![vec![]; total_websites];
+    let mut adjacency_matrix: Vec<Vec<u32>> = vec![vec![]; total_websites];
     // artificially making up node connections until we have some real-life data
 
 
-    adjacency_matrix[0] = vec![1, 2, 3];
+    adjacency_matrix[0] = vec![3];
     adjacency_matrix[1] = vec![0];
-    adjacency_matrix[2] = vec![0];
-    adjacency_matrix[3] = vec![0];
+    adjacency_matrix[2] = vec![1];
+    adjacency_matrix[3] = vec![0, 1, 4];
+    adjacency_matrix[4] = vec![];
 
+    let mut out_nodes_num: Vec<u32> = vec![0; total_websites];
+    for i in 0..total_websites {
+        for website in 0..adjacency_matrix[i].len() {
+            out_nodes_num[adjacency_matrix[i][website] as usize] += 1;
+        }
+    }
     // we dont need mutable thingy anymore
     let adjacency_matrix = adjacency_matrix;
 
-    println!("{:?}", adjacency_matrix);
+    println!("Adj mrtx {:?}", adjacency_matrix);
+    println!("Out nodes {:?}", out_nodes_num);
 
-    let num_iterations:u32 = 1;
-    for iteration in 0..num_iterations {
-        for node_idx in 0..total_websites {
-            let mut sum:f64 = 0.0;
-            for in_node_idx in &adjacency_matrix[node_idx] {
-                sum += rank[*in_node_idx as usize] / adjacency_matrix[*in_node_idx as usize].len() as f64;
-            }
-            rank_new[node_idx as usize] = sum;  // todo: add dampening factor, but later
-        }
-        // now we can just make rank to hold new rank without copying
-        std::mem::swap(&mut rank, &mut rank_new);
-    }
+    let num_iterations:u32 = 10;
+
     println!("{:?}", rank);
     println!("{:?}", rank_new);
-    // let first = init_node(0, &vec![1, 2, 3], &init_rank);
-    // let second = init_node(1, &vec![0], &init_rank);
-    // let third= init_node(2, &vec![0], &init_rank);
-    // let fourth= init_node(3, &vec![0], &init_rank);
-    // let mut nodes: Vec<Node> = vec![first, second, third, fourth];
-    // for i in 0..total_websites {
-    //    println!("{}", nodes[i as usize]);
-    // }
-    // for iteration in 0..1 {
-    //     for i in 0..nodes.len() {
-    //         let mut sum: f64 = 0.0;
-    //         {
-    //             let links = &nodes[i as usize].links;
-    //             let in_link: usize = 0;
-    //             for in_link in links {
-    //                 let incoming_node: &Node = &nodes[*in_link as usize];
-    //                 println!("{}", incoming_node.rank1);
-    //                 sum += 0.5 * incoming_node.rank1 / incoming_node.out_nodes_num as f64;
-    //                 // sum += 0.5 * nodes[incoming_node_idx as usize].rank1 / nodes[incoming_node_idx as usize].out_nodes_num as f64;
-    //             }
-    //         }
-    //         let mut node = &mut nodes[i as usize];
-    //         node.rank2 = sum + 0.5 * node.rank1;
-        //     // nodes.get_mut(i as usize).unwrap().set_rank2(sum);
-        // }
-        // for i in 0..nodes.len() {
-        //     nodes[i as usize].rank1 = nodes[i as usize].rank2; // бидлокод, потім заберу
-        //     // nodes.get_mut(i as usize).unwrap().set_rank2(sum);
-        // }
+    for _iteration in 0..num_iterations {
+        {
+            pagerank_iteration(&rank, &mut rank_new, &adjacency_matrix, &out_nodes_num, dampening_factor);
+        }
+        // println!("{:?}", rank);
+        // println!("{:?}", rank_new);
+        // now we can just make rank to hold new rank without copying
+        std::mem::swap(&mut rank, &mut rank_new);
+        println!("After iteration {}", _iteration);
+        println!("{:?}", rank);
+        println!("{:?}", rank_new);
+    }
 
-
-        // println!("\n");
-        // for i in 0..total_websites {
-        //     println!("{}", nodes[i as usize]);
-        // }
-    // // }
-    // // println!("\n");
-    // // for i in 0..total_websites {
-    // //     println!("{}", nodes[i as usize]);
-    // }
+    println!("\nFinal rankings: {:?}", rank);
 }
 
 // struct Node {
