@@ -7,147 +7,80 @@ class PageRankDb:
         self.connection = connection
         self.cursor = connection.cursor()
 
-    def add_url(self, url):
-        self.cursor.execute(
+    def insert_urls(self, urls):
+        execute_values(self.cursor,
             """
-            SELECT website_id FROM name_idx 
-            WHERE website_str = %s;
+            INSERT INTO pagerank (website_str)
+            VALUES %s
+            ON CONFLICT (website_str) DO NOTHING
             """,
-            (url,)
+            [(url,) for url in urls]
         )
-
-        res =  self.cursor.fetchall()
         self.connection.commit()
-        if res:
-            return res[0][0]
 
-        self.cursor.execute(
+    def insert_connections(self, pairs):
+        execute_values(self.cursor,
             """
-            INSERT INTO name_idx (website_str)
-            VALUES (%s)
-            RETURNING website_id;
-            """,
-            (url,)
-        )
-
-        id = self.cursor.fetchone()[0]
-
-
-        self.cursor.execute(
-            """
-            INSERT INTO pagerank (website_id, rank, incoming_links)
-            VALUES (%s, %s, %s)
+            INSERT INTO connections (in_website_id, out_website_id)
+            VALUES %s
             ON CONFLICT DO NOTHING;
             """,
-            (id, 0, [])
+            pairs
         )
         self.connection.commit()
-        return id
 
-    def get_inlinks(self, id):
+    def build_id_dict(self, urls):
         self.cursor.execute(
             """
-            SELECT incoming_links FROM pagerank 
-            WHERE website_id = %s;
-            """,
-            (id,)
-        )
-        self.connection.commit()
-        return self.cursor.fetchone()[0]
-
-    def add_inlink(self, id, inlink_id):
-        self.cursor.execute(
+            SELECT website_id, website_str FROM pagerank;
             """
-            UPDATE pagerank SET incoming_links = array_append(incoming_links, %s)
-            WHERE website_id = %s;
-            """,
-            (inlink_id, id)
         )
+        ids = {}
+        while True:
+            res = self.cursor.fetchone()
+            if res is None:
+                break
+            if res[1] in urls:
+                ids[res[1]] = res[0]
+            print(res)
         self.connection.commit()
+        return ids
 
-    def add_init_urls(self, sorted_urls):
-        """
-        :param url_id: list
-        :return:
-        """
-        execute_values(self.cursor,
-                       """
-                        INSERT INTO name_idx (website_str)
-                        VALUES %s
-                        ON CONFLICT DO NOTHING;
-                        """,
-                       [(url,) for url in sorted_urls])
-        self.connection.commit()
-
-    def add_init_inlinks(self, id_incoming):
-        """
-        :param id_incoming: dict
-        :return:
-        """
-        execute_values(self.cursor,
-                       """
-                        INSERT INTO pagerank (website_id, rank, incoming_links)
-                        VALUES %s
-                        ON CONFLICT DO NOTHING;
-                        """,
-                       [(id, 0, list(inlinks)) for id, inlinks in id_incoming.items()])
-        self.connection.commit()
-
-    def add_init_file(self, filename):
-        """
-        :param filename:
-        :return:
-        """
-        url_id = {}
-        id_incoming = {}
-        with open(filename) as f:
-            for num, line in enumerate(f, start=0):
-                if num % 3 != 0:
-                    continue
-                new_urls = line.strip().split()
-                for url in new_urls:
-                    url_id[url] = url_id.get(url, len(url_id) + 1)
-                    id_incoming[url_id[url]] = id_incoming.get(url_id[url], set())
-
-                for url in new_urls[1:]:
-                    id_incoming[url_id[url]].add(url_id[new_urls[0]])
-
-        self.add_init_urls(sorted(list(url_id), key=lambda url: url_id[url]))
-        self.add_init_inlinks(id_incoming)
 
     def add_file(self, filename):
         """
         :param filename:
         :return:
         """
+        urls = set()
+        out_links = {}
         with open(filename) as f:
             for num, line in enumerate(f, start=0):
                 if num % 3 != 0:
                     continue
                 new_urls = line.strip().split()
-                ids = []
-                for url in new_urls:
-                    ids.append(self.add_url(url))
+                outgoing = set(new_urls[1:])
 
-                for id in ids[1:]:
-                    inlinks = self.get_inlinks(id)
-                    if ids[0] not in inlinks:
-                        self.add_inlink(id, ids[0])
+                urls.add(new_urls[0])
+                urls |= outgoing
+                out_links[new_urls[0]] = out_links.get(new_urls[0], set()) | outgoing
+
+        self.insert_urls(urls)
+        id_mapping = self.build_id_dict(urls)
+
+        pairs = [(id_mapping[in_link], id_mapping[out_link])
+                 for out_link, in_links in out_links.items()
+                 for in_link in in_links]
+
+        self.insert_connections(pairs)
 
 
 
-#print(parse_file("example.txt"))
-
-conn = psycopg2.connect(dbname="test_db", user="postgres", port=5433, password="postgres")
+conn = psycopg2.connect(dbname="acs_db", user="postgres", port=5433, password="postgres")
 
 x = PageRankDb(conn)
 
-x.add_init_file("example.txt")
-
-# цей метод суто для того, якщо всі дані не влазять в оперативку
-# він працює повільніше, бо чекає всі айдішки на наявність в базі
-# і тд
-x.add_file("example2.txt")
+x.add_file("example.txt")
 
 conn.close()
 
