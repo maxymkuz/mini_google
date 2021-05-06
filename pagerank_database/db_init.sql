@@ -8,6 +8,8 @@ CREATE DATABASE pagerank_db
     CONNECTION LIMIT = -1;
 
 
+-- table that will be accessed by search engine after calculating pagerank
+
 CREATE TABLE IF NOT EXISTS pagerank
 (
 	website_id SERIAL,
@@ -16,11 +18,14 @@ CREATE TABLE IF NOT EXISTS pagerank
 	PRIMARY KEY (website_id)
 );
 
-
+-- index for queries of search engine
 CREATE UNIQUE INDEX website_string_idx ON pagerank (website_str);
+
+-- index for queries while calculating pagerank
 CREATE UNIQUE INDEX website_id_idx ON pagerank (website_id);
 
 
+-- teleportation matrix
 CREATE TABLE IF NOT EXISTS connections
 (
 	out_website_id INT,
@@ -41,6 +46,7 @@ CREATE INDEX conn_out_idx ON connections (out_website_id);
 CREATE INDEX conn_in_idx ON connections (in_website_id);
 
 
+-- last values of calculated transition probabilities
 CREATE MATERIALIZED VIEW IF NOT EXISTS counts AS
 SELECT * FROM
 (
@@ -58,6 +64,7 @@ USING (website_id);
 
 CREATE UNIQUE INDEX count_idx ON counts (website_id);
 
+-- last values of calculated node weights
 CREATE MATERIALIZED VIEW IF NOT EXISTS weight AS
 SELECT
 	connections.out_website_id,
@@ -77,10 +84,9 @@ JOIN counts ON counts.website_id = connections.in_website_id;
 CREATE INDEX weight_in_idx ON weight (in_website_id);
 
 
+-- copy of pagerank values (because when we calculate pagerank,
+-- we need to access previously calculated values and also save new ones)
 CREATE MATERIALIZED VIEW IF NOT EXISTS previous_ranks AS
 SELECT pagerank.website_id, pagerank.rank FROM pagerank;
 
 CREATE INDEX rank_idx ON previous_ranks (website_id);
-
-REFRESH MATERIALIZED VIEW counts;
-REFRESH MATERIALIZED VIEW weight;
