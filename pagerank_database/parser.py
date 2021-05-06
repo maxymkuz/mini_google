@@ -80,7 +80,7 @@ conn = psycopg2.connect(dbname="acs_db", user="postgres", port=5433, password="p
 
 x = PageRankDb(conn)
 
-x.add_file("example.txt")
+x.add_file("collected_text_and_new_links.txt")
 
 conn.close()
 
