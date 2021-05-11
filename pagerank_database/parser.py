@@ -40,6 +40,8 @@ class PageRankDb:
             res = self.cursor.fetchone()
             if res is None:
                 break
+            # for every url from the set of new ones
+            # we save its id
             if res[1] in urls:
                 ids[res[1]] = res[0]
             print(res)
@@ -47,11 +49,10 @@ class PageRankDb:
         return ids
 
     def add_file(self, filename):
-        """
-        :param filename:
-        :return:
-        """
+        # set of links that will be saved to our database
         urls = set()
+
+        # dictionary for containing ingoing links of every crawled page
         out_links = {}
         with open(filename) as f:
             for num, line in enumerate(f, start=0):
@@ -63,12 +64,17 @@ class PageRankDb:
                 urls.add(new_urls[0])
                 out_links[new_urls[0]] = outgoing
 
+        # we delete links from websites that were not crawled
         for url in out_links:
             out_links[url] &= urls
 
+        # insert all urls to database
         self.insert_urls(urls)
+
+        # get ids of every website which are stored in our database
         id_mapping = self.build_id_dict(urls)
 
+        # pairs containing out_website_id, in_website_id for every link
         pairs = [(id_mapping[in_link], id_mapping[out_link])
                  for out_link, in_links in out_links.items()
                  for in_link in in_links]
@@ -76,15 +82,14 @@ class PageRankDb:
         self.insert_connections(pairs)
 
 
-# conn = psycopg2.connect(dbname="acs_db", user="postgres", port="5432", password="postgres")
 conn = psycopg2.connect(user="postgres",
                         password="postgres",
                         host="127.0.0.1",
                         port="5432",
                         database="acs_db")
 
-x = PageRankDb(conn)
+db = PageRankDb(conn)
 
-x.add_file("collected_text_and_new_links.txt")
+db.add_file("collected_text_and_new_links.txt")
 
 conn.close()
