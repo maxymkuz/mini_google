@@ -1,9 +1,7 @@
 use postgres::{Client, NoTls, Error};
-// use::std::thread;
-// use std::rc::Rc;
 
 
-// a function that performs a single page rank iteration
+// performs a single page rank iteration
 fn pagerank_iteration<'a>(
     rank: &'a Vec<f64>,
     rank_new: &'a mut Vec<f64>,
@@ -24,9 +22,18 @@ fn pagerank_iteration<'a>(
 }
 
 
+fn get_manhattan_distance(rank: &Vec<f64>, rank_new: &Vec<f64>) -> f64{
+    let mut manhattan_distance: f64 = 0.0;
+    for index in 0..rank.len() as usize {
+        manhattan_distance += (rank[index] - rank_new[index]).abs();
+    }
+    manhattan_distance
+}
+
+
 fn main() -> Result<(), Error> {
     let dampening_factor: f64 = 0.8;
-    let num_iterations: u32 = 40;
+    let num_iterations: u32 = 200;
 
     // initializing connection to database
     let mut client = Client::connect("postgresql://postgres:postgres@localhost/acs_db", NoTls)?;
@@ -51,9 +58,6 @@ fn main() -> Result<(), Error> {
         if in_website_id != out_website_id {
             adjacency_matrix[in_website_id as usize].push(out_website_id as u32);
         }
-        // else {
-        // println!("Bad id: {}", in_website_id);
-        // }
     }
 
     // we dont need mutable thingy anymore
@@ -79,19 +83,25 @@ fn main() -> Result<(), Error> {
     println!("Adj mrtx {:?}", adjacency_matrix);
     println!("Out nodes {:?}", out_nodes_num);
 
-    println!("{:?}", rank);
-    println!("{:?}", rank_new);
-    for _iteration in 0..num_iterations {
+    // adding manhattan distance vector to measure convergence:
+    let mut manhattan_distances: Vec<f64> = vec![0.0; num_iterations as usize];
+
+    for iteration in 0..num_iterations as usize{
         {
             pagerank_iteration(&rank, &mut rank_new, &adjacency_matrix, &out_nodes_num, &dampening_factor);
         }
+        // Calculating distance that represents the convergence rate:
+        manhattan_distances[iteration] = get_manhattan_distance(&rank, &rank_new);
+
         // now we can just make rank to hold new rank without copying
         std::mem::swap(&mut rank, &mut rank_new);
-        println!("After iteration {}:", _iteration);
+
+        println!("After iteration {}:", iteration);
         println!("{:?}", rank);
     }
 
     println!("\nFinal rankings: {:?}", rank);
 
+    println!("\nManhattan distances: {:?}", manhattan_distances);
     Ok(())
 }
