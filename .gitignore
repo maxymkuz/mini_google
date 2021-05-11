@@ -9,3 +9,4 @@ perf.data
 perf.data.old
 ES_DATA 
 big.txt
+pagerank_database/collected_text_and_new_links.txt

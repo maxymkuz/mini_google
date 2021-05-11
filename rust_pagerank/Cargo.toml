@@ -1,5 +1,5 @@
 [package]
-name = "rust-pagerank"
+name = "rust_pagerank"
 version = "0.1.0"
 authors = ["maxymkuz <maxymkuz@gmail.com>"]
 edition = "2018"

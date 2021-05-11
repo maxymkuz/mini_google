@@ -498,7 +498,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-pagerank"
+name = "rust_pagerank"
 version = "0.1.0"
 dependencies = [
  "postgres",

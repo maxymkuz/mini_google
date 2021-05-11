@@ -9,7 +9,7 @@ fn pagerank_iteration<'a>(
     rank_new: &'a mut Vec<f64>,
     adjacency_matrix: &'a Vec<Vec<u32>>,
     out_nodes_num: &'a Vec<u32>,
-    d: &f64
+    d: &f64,
 ) {
     for node_idx in 0..rank.len() {
         let mut sum: f64 = 0 as f64;
@@ -24,10 +24,9 @@ fn pagerank_iteration<'a>(
 }
 
 
-
 fn main() -> Result<(), Error> {
-    let dampening_factor:f64 = 0.8;
-    let num_iterations:u32 = 40;
+    let dampening_factor: f64 = 0.8;
+    let num_iterations: u32 = 40;
 
     // initializing connection to database
     let mut client = Client::connect("postgresql://postgres:postgres@localhost/acs_db", NoTls)?;
@@ -61,7 +60,7 @@ fn main() -> Result<(), Error> {
     let adjacency_matrix = adjacency_matrix;
 
 
-    // initialization value for all ranks
+    // initialisation value for all ranks
     let init_rank: f64 = 1.0 / total_websites as f64;
 
     // Initialising two vectors with default values(init_ran and 0.0)
@@ -85,16 +84,7 @@ fn main() -> Result<(), Error> {
     for _iteration in 0..num_iterations {
         {
             pagerank_iteration(&rank, &mut rank_new, &adjacency_matrix, &out_nodes_num, &dampening_factor);
-            // Multithreading is not implemented yet
-            // let mut vec = Vec::new();
-            // vec.push(thread::spawn( || {pagerank_iteration(&rank, &mut rank_new, &adjacency_matrix, &out_nodes_num, &dampening_factor)}));
-            // for thread in vec {
-            //     thread.join().unwrap();
-            // }
-
         }
-        // println!("{:?}", rank);
-        // println!("{:?}", rank_new);
         // now we can just make rank to hold new rank without copying
         std::mem::swap(&mut rank, &mut rank_new);
         println!("After iteration {}:", _iteration);
@@ -102,7 +92,6 @@ fn main() -> Result<(), Error> {
     }
 
     println!("\nFinal rankings: {:?}", rank);
-    println!("\nMax rank {}", rank);
 
     Ok(())
 }
