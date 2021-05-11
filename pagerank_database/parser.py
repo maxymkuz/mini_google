@@ -62,8 +62,10 @@ class PageRankDb:
                 outgoing = set(new_urls[1:])
 
                 urls.add(new_urls[0])
-                urls |= outgoing
-                out_links[new_urls[0]] = out_links.get(new_urls[0], set()) | outgoing
+                out_links[new_urls[0]] = outgoing
+
+        for url in out_links:
+            out_links[url] &= urls
 
         self.insert_urls(urls)
         id_mapping = self.build_id_dict(urls)
