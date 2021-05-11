@@ -1,4 +1,5 @@
-// use::std::thread;
+use::std::thread;
+use std::rc::Rc;
 
 // a function that performs a single page rank iteration
 fn pagerank_iteration<'a>(
@@ -20,7 +21,9 @@ fn pagerank_iteration<'a>(
     // println!("INSIDE PAGERANK: {:?}", rank_new);
 }
 
+
 fn main() {
+
     // the total number of websites we will use in iteration
     let total_websites: usize = 5;
     let dampening_factor:f64 = 0.8;
