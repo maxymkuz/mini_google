@@ -1,5 +1,7 @@
-use::std::thread;
-use std::rc::Rc;
+use postgres::{Client, NoTls, Error};
+// use::std::thread;
+// use std::rc::Rc;
+
 
 // a function that performs a single page rank iteration
 fn pagerank_iteration<'a>(
@@ -22,13 +24,42 @@ fn pagerank_iteration<'a>(
 }
 
 
-fn main() {
 
-    // the total number of websites we will use in iteration
-    let total_websites: usize = 5;
+fn main() -> Result<(), Error> {
     let dampening_factor:f64 = 0.8;
+    let num_iterations:u32 = 40;
 
-    let num_iterations:u32 = 10;
+    // initializing connection to database
+    let mut client = Client::connect("postgresql://postgres:postgres@localhost/acs_db", NoTls)?;
+
+    // counting the total number of websites indexed
+    let mut x: i64 = client.query("SELECT count(*) FROM pagerank", &[])?[0].get(0);
+    x += 1;
+
+    let total_websites: usize = x as usize;
+
+    println!("Total websites: {}", total_websites);
+
+    // initializing the adjacency matrix
+    let mut adjacency_matrix: Vec<Vec<u32>> = vec![vec![]; total_websites];
+
+    // saving all edges in memory as iterator, and iterating over it
+    for row in client.query("SELECT * FROM connections", &[])? {
+        let out_website_id: i32 = row.get(0);
+        let in_website_id: i32 = row.get(1);
+
+        // Filtering out self links, and adding them to adjacency matrix
+        if in_website_id != out_website_id {
+            adjacency_matrix[in_website_id as usize].push(out_website_id as u32);
+        }
+        // else {
+        // println!("Bad id: {}", in_website_id);
+        // }
+    }
+
+    // we dont need mutable thingy anymore
+    let adjacency_matrix = adjacency_matrix;
+
 
     // initialization value for all ranks
     let init_rank: f64 = 1.0 / total_websites as f64;
@@ -37,14 +68,6 @@ fn main() {
     let mut rank: Vec<f64> = vec![init_rank; total_websites];
     let mut rank_new: Vec<f64> = vec![0.0; total_websites];
 
-    let mut adjacency_matrix: Vec<Vec<u32>> = vec![vec![]; total_websites];
-    // artificially making up node connections until we have some real-world data
-
-    adjacency_matrix[0] = vec![3];
-    adjacency_matrix[1] = vec![0];
-    adjacency_matrix[2] = vec![1];
-    adjacency_matrix[3] = vec![0, 1, 4];
-    adjacency_matrix[4] = vec![];
 
     // initialising the number of out nodes based on adjacency matrix
     let mut out_nodes_num: Vec<u32> = vec![0; total_websites];
@@ -53,8 +76,6 @@ fn main() {
             out_nodes_num[adjacency_matrix[i][website] as usize] += 1;
         }
     }
-    // we dont need mutable thingy anymore
-    let adjacency_matrix = adjacency_matrix;
 
     println!("Adj mrtx {:?}", adjacency_matrix);
     println!("Out nodes {:?}", out_nodes_num);
@@ -81,4 +102,7 @@ fn main() {
     }
 
     println!("\nFinal rankings: {:?}", rank);
+    println!("\nMax rank {}", rank);
+
+    Ok(())
 }
