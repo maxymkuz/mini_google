@@ -32,11 +32,11 @@ fn get_manhattan_distance(rank: &Vec<f64>, rank_new: &Vec<f64>) -> f64{
 
 fn main() -> Result<(), Error> {
     let dampening_factor: f64 = 0.8;
-    let num_iterations: u32 = 40;
+    let num_iterations: u32 = 140;
 
     // initializing connection to database
     let mut client = Client::connect(
-        "postgresql://postgres:postgres@localhost:5433/acs_db",
+        "postgresql://postgres:postgres@localhost/acs_db",
         NoTls
     )?;
 
