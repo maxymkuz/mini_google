@@ -26,34 +26,34 @@ services:
       - 9200:9200
       - 9300:9300
 
-  website:
-     build: ./website/
-     ports:
-       - 5000:5000
-     depends_on:
-       elasticsearch:
-         condition: service_healthy
+#  website:
+#     build: ./website/
+#     ports:
+#       - 5000:5000
+#     depends_on:
+#       elasticsearch:
+#         condition: service_healthy
 
-  database_backend:
-    build: ./database_backend/
-    ports:
-     - 8080:8080
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+#  database_backend:
+#    build: ./database_backend/
+#    ports:
+#     - 8080:8080
+#    depends_on:
+#      elasticsearch:
+#        condition: service_healthy
 
 
-  rust_crawler:
-    build: ./rust_crawler/
-#    command:
-#      --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
-    volumes:
-          - cargo:/home/rust/.cargo
-          - target:/home/rust/src/target
-
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+#  rust_crawler:
+#    build: ./rust_crawler/
+##    command:
+##      --inp_file=urls.txt --out_file=out.txt --threads=4 --limit=200
+#    volumes:
+#          - cargo:/home/rust/.cargo
+#          - target:/home/rust/src/target
+#
+#    depends_on:
+#      elasticsearch:
+#        condition: service_healthy
 
   lang_detect_python:
     build: ./lang_detect_python/

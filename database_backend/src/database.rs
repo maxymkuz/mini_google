@@ -10,20 +10,21 @@ use serde_json::Value;
 /// with the database.
 pub fn establish_database_connection() -> Elasticsearch {
     // TODO: Implement a smarter retry system
-    //loop {
-    //match Transport::single_node("http://elasticsearch:9200") {
-    //Ok(transport) => {
-    //let client = Elasticsearch::new(transport);
-    //println!("Successfuly connected to the database, yay!");
-    //return client;
-    //}
-    //Err(_) => {
-    //println!("Failed to connect to the database, retrying in 500 msec");
-    //std::thread::sleep(std::time::Duration::from_millis(500));
-    //continue;
-    //}
-    //}
-    //}
+    // loop {
+    //     // match Transport::single_node("http://elasticsearch:9200") {
+    //     match Transport::single_node("http://0.0.0.0:9200") {
+    //         Ok(transport) => {
+    //             let client = Elasticsearch::new(transport);
+    //             println!("Successfuly connected to the database, yay!, {:?}", client);
+    //             return client;
+    //         }
+    //         Err(_) => {
+    //             println!("Failed to connect to the database, retrying in 500 msec");
+    //             std::thread::sleep(std::time::Duration::from_millis(500));
+    //             continue;
+    //         }
+    //     }
+    // }
     let client = Elasticsearch::default();
     client
 }
@@ -55,6 +56,7 @@ pub async fn get_search(
     // TODO: Start taking from and size parameters
     // TODO: Figure out whether we need to sort this, for pagination see:
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#search-after
+    // println!("{:?}", client);
     let response = client
         .search(SearchParts::Index(&["english"]))
         .from(0)
@@ -64,6 +66,7 @@ pub async fn get_search(
         .await?;
     let mut response = response.json::<Value>().await?;
 
+    // println!("json {:?}", &response);
     // Parses out the json we receive from Elasticsearch. Will definitely change in the future
     let hits: Vec<HashMap<String, String>> = response["hits"]["hits"]
         .as_array_mut()

@@ -32,7 +32,8 @@ cargo run
 With Docker:
 ```
 # Build docker container
-./build.sh
+./build.srustup install nightly-2021-02-13
+h
 # Run website on 0.0.0.0:5000
 ./run.sh
 

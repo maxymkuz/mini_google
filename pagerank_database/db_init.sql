@@ -8,6 +8,15 @@ CREATE DATABASE pagerank_db
     CONNECTION LIMIT = -1;
 
 
+-- some scripts to check that db works:
+SELECT * FROM pagerank;
+SELECT * from connections;
+
+SELECT count(*) from pagerank;
+
+SELECT * FROM pagerank
+ORDER BY rank ACS;
+
 -- table that will be accessed by search engine after calculating pagerank
 
 CREATE TABLE IF NOT EXISTS pagerank
@@ -90,3 +99,4 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS previous_ranks AS
 SELECT pagerank.website_id, pagerank.rank FROM pagerank;
 
 CREATE INDEX rank_idx ON previous_ranks (website_id);
+

@@ -18,6 +18,7 @@ async fn search(
         Ok(x) => x,
         Err(_) => return HttpResponse::Conflict().finish(),
     };
+    println!("Response: {:?}", &search_result);
     HttpResponse::Ok().json(search_result)
 }
 
@@ -39,7 +40,7 @@ pub async fn launch_server() -> std::io::Result<()> {
             //.data(web::JsonConfig::default().limit(4096))
             .service(web::resource("/search").route(web::post().to(search)))
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:8020")?
     .run()
     .await
 }

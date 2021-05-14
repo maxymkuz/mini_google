@@ -33,10 +33,10 @@ fn get_manhattan_distance(rank: &Vec<f64>, rank_new: &Vec<f64>) -> f64{
 
 fn main() -> Result<(), Error> {
     let dampening_factor: f64 = 0.8;
-    let num_iterations: u32 = 200;
+    let num_iterations: u32 = 10;
 
     // initializing connection to database
-    let mut client = Client::connect("postgresql://postgres:postgres@localhost/acs_db", NoTls)?;
+    let mut client = Client::connect("postgresql://postgres:postgres@localhost/pagerank_db", NoTls)?;
 
     // counting the total number of websites indexed
     let mut x: i64 = client.query("SELECT count(*) FROM pagerank", &[])?[0].get(0);
@@ -103,5 +103,14 @@ fn main() -> Result<(), Error> {
     println!("\nFinal rankings: {:?}", rank);
 
     println!("\nManhattan distances: {:?}", manhattan_distances);
+
+    // updating the ranks in the database:
+    for (index, i_rank) in rank.iter().enumerate() {
+        client.execute(
+        "UPDATE pagerank SET rank = $1 WHERE website_id = $2",
+        &[i_rank, &(index as i32)],
+        )?;
+        println!("{}", index)
+    }
     Ok(())
 }
