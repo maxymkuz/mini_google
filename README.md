@@ -24,8 +24,9 @@ Progress can be tracked [over here](./PROGRESS.md).
 Launch each container independently with instructions in respective directories,
 or launch all of them together:
 ```
-# Rust takes some time to download and compile all of the dependencies since it
-# produces static binaries, so be aware! We are figuring out a way to fix this.
+# Download the file with crawled websites, or crawl the websites on your own into
+# the root of the project as out.txt: https://drive.google.com/file/d/1XsnWbmk4YzLmZqWjRaMXDzMC_-Rv0Zwm/view
+
 docker-compose build
 
 docker-compose up
